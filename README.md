@@ -64,10 +64,9 @@ elmo-hikes/
 
 - **Your Name** - BCIT CST Student with a passion for outdoor adventures and user-friendly applications. Fun fact: Loves solving Rubik's Cubes in under a minute.
 - **Teammate Name** - BCIT CST Student, Frontend enthusiast with a knack for creative design. Fun fact: Has a collection of over 50 houseplants.
-  Luka - BCIT CST Student that loves hiking. Fun fact: He loves his Macbook that he recently got.
 
-Tyki - BCIT CST Student that is from Japan. Fun fact: Collects vinyl records for 10 years.
-
+- **Luka** - BCIT CST Student that loves hiking. Fun fact: He loves his Macbook that he recently got.
+- **Tyki** - BCIT CST Student that is from Japan. Fun fact: Collects vinyl records for 10 years.
 - **Emmanuel ** - BCIT CST Student with a passion for outdoor adventures and user-friendly applications. Fun fact: Love hanging out with friend and family. Love playing video game and working out in my free times.
 - **Havoc** - BCIT CST Student, Frontend enthusiast with a knack for creative design. Fun fact: Has a collection of over 50 houseplants.
 - Zhuming Mai - BCIT CST Student, high enthusiast to cryptograthy and cybersecurity. Fun fact: Has a collection of over 100 Canadian commemorative coin.
