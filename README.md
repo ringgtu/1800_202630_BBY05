@@ -71,7 +71,7 @@ elmo-hikes/
 - **Havoc** - BCIT CST Student, Frontend enthusiast with a knack for creative design. Fun fact: Has a collection of over 50 houseplants.
 - Zhuming Mai - BCIT CST Student, high enthusiast to cryptograthy and cybersecurity. Fun fact: Has a collection of over 100 Canadian commemorative coin.
 - Tyki Mckinnon- - BCIT CST Student with a passion for hiking as well as making new frineds to talk to. Fun fact: Loves to collect viynl records.
-- Luka - UBC(wanna be BCIT) CST student. Very unique person who seems to enjoy math.Fun fact:He is better at coding than I am.
+- Luka - BCIT(wanna be UBC) CST student. Very unique and funny person who seems to enjoy math.Fun fact:He is better at coding than I am and has similar hobbies as me.
 
 ---
 
