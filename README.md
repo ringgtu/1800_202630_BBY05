@@ -102,4 +102,8 @@ elmo-hikes/
 
 This project is licensed under the MIT License. See the LICENSE file for details.s
 
+
 this is just a test for luka for me to understand
+
+This is a test for tyki
+
