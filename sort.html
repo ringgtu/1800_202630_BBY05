@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sort</title>
+
+  <script type="module" src="./src/main.js"></script>
+</head>
+
+<body>
+  <!-- Each page's content goes here. -->
+  <main class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6 col-xl-5">
+
+            <!-- Header & close button-->
+            <div class="d-flex justify-content-between align-items-center mb-5">
+                <h1 class="h5 mb-0">Sort By</h1>
+                <a href="search.html" class="btn-close" aria-label="Close"></a>
+            </div>
+
+            <!-- Radio buttons -->
+            <form action = "filtered.html">
+
+                <div class="px-4">
+                    <div class="form-check py-2">
+                        <input class="form-check-input" type="radio" name="sort" id="sort-az" value="az">
+                        <label class="form-check-label ms-2" for="sort-az">
+                            Alphabet (A-Z)
+                        </label>
+                    </div>
+
+                    <div class="form-check py-2">
+                        <input class="form-check-input" type="radio" name="sort" id="sort-za" value="za">
+                        <label class="form-check-label ms-2" for="sort-za">
+                            Alphabet (Z-A)
+                        </label>
+                    </div>
+
+                    <div class="form-check py-2">
+                        <input class="form-check-input" type="radio" name="sort" id="sort-new" value="new">
+                        <label class="form-check-label ms-2" for="sort-new">
+                            Release Date (Newest)
+                        </label>
+                    </div>
+
+                    <div class="form-check py-2">
+                        <input class="form-check-input" type="radio" name="sort" id="sort-old" value="old">
+                        <label class="form-check-label ms-2" for="sort-old">
+                            Release Date (Oldest)
+                        </label>
+                    </div>
+
+                    <div class="form-check py-2">
+                        <input class="form-check-input" type="radio" name="sort" id="sort-pop" value="pop">
+                        <label class="form-check-label ms-2" for="sort-pop">
+                            Most Popular
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Apply Button-->
+                <div class="d-grid mt-5 px-4">
+                    <button type="submit" class="btn btn-secondary btn-lg rounded-pill">Apply</button>
+                </div>
+            </form>
+        </div>
+    </div>
+  </main>
+
+
+</body>
+</html>
