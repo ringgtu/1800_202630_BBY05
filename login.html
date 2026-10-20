@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Login | Book Organization App</title>
+
+    <script type="module" src="/src/components/site-footer.js"></script>
+  </head>
+
+  <body class="bg-body-tertiary min-vh-100 d-flex flex-column">
+    <!-- Top bar -->
+    <nav class="navbar bg-body border-bottom">
+      <div class="container d-flex align-items-center justify-content-between">
+        <a href="/index.html" class="btn btn-link text-decoration-none text-secondary px-0">
+          &larr; Back
+        </a>
+
+        <a href="/index.html" class="navbar-brand fw-semibold m-0" aria-label="Home">
+          Book Organization App
+        </a>
+
+        <!-- Spacer keeps the brand visually centered -->
+        <span class="d-none d-sm-inline invisible">&larr; Back</span>
+      </div>
+    </nav>
+
+    <main class="container flex-grow-1 d-flex align-items-center justify-content-center py-5">
+      <div class="card border-0 shadow-sm rounded-4 w-100" style="max-width: 420px">
+        <div class="card-body p-4 p-md-5">
+          <div id="authAlert" class="alert alert-danger d-none" role="alert"></div>
+
+          <!-- Login -->
+          <section id="loginView">
+            <div class="text-center mb-4">
+              <h1 class="h3 fw-semibold mb-1">Welcome back</h1>
+              <p class="text-body-secondary mb-0">Log in to your digital library</p>
+            </div>
+
+            <form id="loginForm" novalidate>
+              <div class="form-floating mb-3">
+                <input
+                  type="email"
+                  id="loginEmail"
+                  class="form-control"
+                  placeholder="name@example.com"
+                  autocomplete="email"
+                  required
+                />
+                <label for="loginEmail">Email address</label>
+              </div>
+
+              <div class="form-floating mb-4">
+                <input
+                  type="password"
+                  id="loginPassword"
+                  class="form-control"
+                  placeholder="Password"
+                  autocomplete="current-password"
+                  required
+                />
+                <label for="loginPassword">Password</label>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-lg w-100">Log in</button>
+            </form>
+
+            <hr class="my-4" />
+
+            <p class="small text-center text-body-secondary mb-0">
+              Don’t have an account?
+              <a href="#" id="toSignup" class="fw-semibold text-decoration-none">Sign up</a>
+            </p>
+          </section>
+
+          <!-- Sign up -->
+          <section id="signupView" class="d-none">
+            <div class="text-center mb-4">
+              <h1 class="h3 fw-semibold mb-1">Create account</h1>
+              <p class="text-body-secondary mb-0">Start building your library</p>
+            </div>
+
+            <form id="signupForm" novalidate>
+              <div class="form-floating mb-3">
+                <input
+                  type="text"
+                  id="signupName"
+                  class="form-control"
+                  placeholder="First and Last Name"
+                  autocomplete="name"
+                  required
+                />
+                <label for="signupName">First and last name</label>
+              </div>
+
+              <div class="form-floating mb-3">
+                <input
+                  type="email"
+                  id="signupEmail"
+                  class="form-control"
+                  placeholder="name@example.com"
+                  autocomplete="email"
+                  required
+                />
+                <label for="signupEmail">Email address</label>
+              </div>
+
+              <div class="form-floating mb-4">
+                <input
+                  type="password"
+                  id="signupPassword"
+                  class="form-control"
+                  placeholder="Password"
+                  autocomplete="new-password"
+                  required
+                />
+                <label for="signupPassword">Password</label>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-lg w-100">Create account</button>
+            </form>
+
+            <hr class="my-4" />
+
+            <p class="small text-center text-body-secondary mb-0">
+              Already have an account?
+              <a href="#" id="toLogin" class="fw-semibold text-decoration-none">Log in</a>
+            </p>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <site-footer></site-footer>
+
+    <script type="module" src="/src/app.js"></script>
+    <script type="module" src="/src/loginSignup.js"></script>
+  </body>
+</html>
