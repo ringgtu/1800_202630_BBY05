@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Profile - Book App</title>
+
+    <script type="module" src="/src/main.js"></script>
+  </head>
+
+  <body>
+    <main class="container py-5">
+      <!-- Profile information -->
+      <section class="bg-secondary-subtle rounded-4 p-3 d-flex align-items-center gap-4">
+        <i class="bi bi-person-circle display-1 text-secondary" aria-hidden="true"></i>
+
+        <div>
+          <h1 class="h4">Name</h1>
+          <p class="mb-0">87 books owned</p>
+        </div>
+      </section>
+      <!-- Favorite books -->
+      <section class="bg-secondary-subtle rounded-4 p-3 mt-4">
+        <h2 class="h5 mb-3">Favorites</h2>
+
+        <div class="d-flex flex-nowrap gap-4 overflow-auto pb-2">
+          <div class="bg-secondary text-white rounded-4 p-3 text-center flex-shrink-0">
+            <div class="bg-light mb-2" style="width: 65px; height: 85px"></div>
+            <p class="mb-0">Book 1</p>
+          </div>
+
+          <div class="bg-secondary text-white rounded-4 p-3 text-center flex-shrink-0">
+            <div class="bg-light mb-2" style="width: 65px; height: 85px"></div>
+            <p class="mb-0">Book 2</p>
+          </div>
+
+          <div class="bg-secondary text-white rounded-4 p-3 text-center flex-shrink-0">
+            <div class="bg-light mb-2" style="width: 65px; height: 85px"></div>
+            <p class="mb-0">Book 3</p>
+          </div>
+        </div>
+      </section>
+      <!-- Book lists -->
+      <section class="bg-secondary-subtle rounded-4 p-3 mt-4">
+        <h2 class="h5 mb-3">Lists</h2>
+
+        <div class="d-flex flex-nowrap gap-4 overflow-auto pb-2">
+          <div class="bg-secondary text-white rounded-4 p-3 text-center flex-shrink-0">
+            <div class="d-flex flex-wrap mb-2" style="width: 65px">
+              <div class="bg-light" style="width: 50%; height: 32px"></div>
+              <div class="bg-dark-subtle" style="width: 50%; height: 32px"></div>
+              <div class="bg-dark-subtle" style="width: 50%; height: 32px"></div>
+              <div class="bg-light" style="width: 50%; height: 32px"></div>
+            </div>
+            <p class="mb-0">List 1</p>
+            <small>31 books</small>
+          </div>
+
+          <div class="bg-secondary text-white rounded-4 p-3 text-center flex-shrink-0">
+            <div class="d-flex flex-wrap mb-2" style="width: 65px">
+              <div class="bg-light" style="width: 50%; height: 32px"></div>
+              <div class="bg-dark-subtle" style="width: 50%; height: 32px"></div>
+              <div class="bg-dark-subtle" style="width: 50%; height: 32px"></div>
+              <div class="bg-light" style="width: 50%; height: 32px"></div>
+            </div>
+            <p class="mb-0">List 2</p>
+            <small>12 books</small>
+          </div>
+
+          <div class="bg-secondary text-white rounded-4 p-3 text-center flex-shrink-0">
+            <div class="d-flex flex-wrap mb-2" style="width: 65px">
+              <div class="bg-light" style="width: 50%; height: 32px"></div>
+              <div class="bg-dark-subtle" style="width: 50%; height: 32px"></div>
+              <div class="bg-dark-subtle" style="width: 50%; height: 32px"></div>
+              <div class="bg-light" style="width: 50%; height: 32px"></div>
+            </div>
+            <p class="mb-0">List 3</p>
+            <small>8 books</small>
+          </div>
+        </div>
+      </section>
+      <button type="button" class="btn bg-secondary-subtle rounded-pill w-100 mt-4">My reviews</button>
+    </main>
+
+    <site-navbar></site-navbar>
+  </body>
+</html>

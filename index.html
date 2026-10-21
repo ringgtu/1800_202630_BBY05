@@ -1,21 +1,25 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
+  <head>
     <title>My BCIT Project</title>
-    <meta name="comp1800 template" content="My 1800 App">
+    <meta name="comp1800 template" content="My 1800 App" />
 
     <!-- Required meta tags -->
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <!-- Other libraries go here -->
   </head>
 
-  <body>
-    <nav class="navbar navbar-expand-sm bg-body-tertiary">
+  <body style="background-color: #f0dda8">
+    <nav
+      class="navbar navbar-expand-sm bg-body-tertiary d-flex justify-content-center align-items-center"
+      style="background-color: #3c1a02 !important">
       <div class="container-fluid">
-        <a class="navbar-brand" href="#">Book Organization App</a>
+        <a class="navbar-brand text-light d-flex justify-content-center align-items-center" href="#">
+          <img src="/images/Logo_Badge.png" alt="Logo" width="50" height="50" class="d-inline-block m-3" />
+          Book Organization App
+        </a>
 
         <button
           class="navbar-toggler"
@@ -36,12 +40,12 @@
           <div class="offcanvas-body">
             <ul class="navbar-nav">
               <li class="nav-item">
-                <a class="nav-link active" href="https://github.com/ringgtu/1800_202630_BBY05" target="_blank"
+                <a class="nav-link text-light" href="https://github.com/ringgtu/1800_202630_BBY05" target="_blank"
                   >GitHub</a
                 >
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="#">Trello Board</a>
+                <a class="nav-link text-light" href="https://trello.com/b/JSB8CDHN/1800202630bby05">Trello Board</a>
               </li>
             </ul>
           </div>
@@ -49,7 +53,7 @@
       </div>
     </nav>
 
-    <div class="container-xxl px-5 py-5 my-5">
+    <div class="container-xxl px-5 py-5" style="background-color: #f0dda8; border-color: #f0dda8">
       <div class="row flex-lg-row-reverse align-items-center g-5 py-5">
         <div class="col-10 col-sm-8 col-lg-6">
           <img
@@ -68,20 +72,20 @@
             book again.
           </p>
           <div class="d-grid gap-3 d-md-flex justify-content-md-start">
-            <a href="/login" class="btn btn-primary btn-lg"> Login / Sign up </a>
+            <a href="/html/login" class="btn btn-lg" style="background-color: #bd9444; border-color: #bd9444">
+              Login / Sign up
+            </a>
           </div>
         </div>
       </div>
     </div>
-<footer class="bg-body-tertiary border-top mt-5 py-4">
-  <div class="container text-center">
-    <p class="fw-semibold mb-1">Book Organization App</p>
-    <p class="mb-1">Keep your reading organized in one place.</p>
-    <p class="small text-body-secondary mb-0">
-      &copy; 2026 Book Organization App
-    </p>
-  </div>
-</footer>
+    <footer class="bg-body-tertiary border-top py-4" style="background-color: #3c1a02 !important">
+      <div class="container text-center text-light">
+        <p class="fw-semibold mb-1">Book Organization App</p>
+        <p class="mb-1">Keep your reading organized in one place.</p>
+        <p class="small mb-0">&copy; 2026 Book Organization App</p>
+      </div>
+    </footer>
     <script type="module" src="./src/main.js"></script>
   </body>
 </html>
