@@ -1,7 +1,7 @@
-async function getBookData(bookname) {
+async function getBookData(bookid) {
   try {
     const response = await fetch(
-      `https://www.googleapis.com/books/v1/volumes/${bookname}?key=${import.meta.env.VITE_GOOGLE_BOOKS_API_KEY}`,
+      `https://www.googleapis.com/books/v1/volumes/${bookid}?key=${import.meta.env.VITE_GOOGLE_BOOKS_API_KEY}`,
       {
         method: "GET",
       },
