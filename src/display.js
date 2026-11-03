@@ -4,11 +4,18 @@
 import { searchBooks, sortBooks } from "./master.js";
 
 const params = new URLSearchParams(window.location.search);
+
+// Search
 const q = params.get("q") ?? "";
+
+// Sort 
 const sort = params.get("sort") ?? "";
+
+// Filter
 const genres = params.getAll("genre");   
 const tags = params.getAll("tag");       
 
+// After action
 const results = document.getElementById("results");
 const heading = document.getElementById("results-heading");
 const searchInput = document.getElementById("search-input");
