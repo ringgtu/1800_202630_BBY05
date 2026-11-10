@@ -1,6 +1,14 @@
 import { auth, db } from "./firebaseConfig.js";
 import { onAuthReady } from "./authentication.js";
-import { addDoc, collection, getDocs, serverTimestamp } from "firebase/firestore";
+import {
+  addDoc,
+  arrayUnion,
+  collection,
+  doc,
+  getDocs,
+  serverTimestamp,
+  setDoc,
+} from "firebase/firestore";
 
 const form = document.getElementById("reviewForm");
 const fields = document.getElementById("reviewFields");
@@ -93,8 +101,8 @@ form.addEventListener("submit", async (event) => {
   showMessage("Saving your review…");
 
   try {
-    await addDoc(collection(db, "reviews"), {
-      bookId,
+    // 1. The review is saved under the book: books/{bookId}/review/{reviewId}
+    const reviewRef = await addDoc(collection(db, "books", bookId, "review"), {
       bookName: bookNames[bookId] || "",
       userId: user.uid,
       userName: user.displayName || "Reader",
@@ -103,7 +111,17 @@ form.addEventListener("submit", async (event) => {
       createdAt: serverTimestamp(),
     });
 
-    // Back to the reviews page, where the new review now shows.
+    // 2. The review is listed in the user's myreview: users/{uid}/myreview
+    try {
+      await setDoc(
+        doc(db, "users", user.uid),
+        { myreview: arrayUnion({ bookId, reviewId: reviewRef.id }) },
+        { merge: true }
+      );
+    } catch (error) {
+      console.error("Review saved, but could not update myreview:", error);
+    }
+
     window.location.href = "./reviews.html";
   } catch (error) {
     console.error("Could not save review:", error);

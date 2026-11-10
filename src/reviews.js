@@ -1,9 +1,9 @@
 import { db } from "./firebaseConfig.js";
 import { onAuthReady } from "./authentication.js";
-import { collection, getDocs, orderBy, query, where } from "firebase/firestore";
+import { collectionGroup, doc, getDoc, getDocs } from "firebase/firestore";
 import { createCover, renderStars, formatDate } from "./reviewUtils.js";
 
-// reviews.html = everyone's reviews, reviews.html?mine=1 = only my reviews
+// reviews.html = every review, reviews.html?mine=1 = only my reviews
 const mineOnly = new URLSearchParams(window.location.search).get("mine") === "1";
 
 const heading = document.getElementById("reviewsHeading");
@@ -25,7 +25,7 @@ function showMessage(text, colour = "secondary") {
 // One review row: cover, book, stars, name and a shortened comment.
 function buildItem(review) {
   const link = document.createElement("a");
-  link.href = `./review_detail.html?id=${encodeURIComponent(review.id)}`;
+  link.href = `./review_detail.html?book=${encodeURIComponent(review.bookId)}&id=${encodeURIComponent(review.id)}`;
   link.className = "d-flex gap-3 text-decoration-none text-dark";
 
   const body = document.createElement("div");
@@ -83,6 +83,32 @@ function render() {
 
 searchInput.addEventListener("input", render);
 
+// Every review under every book: books/{bookId}/review/{reviewId}
+async function loadAll() {
+  const snapshot = await getDocs(collectionGroup(db, "review"));
+  return snapshot.docs.map((d) => ({
+    id: d.id,
+    bookId: d.ref.parent.parent.id,
+    ...d.data(),
+  }));
+}
+
+// My reviews: read the myreview list on my user document, then open each review.
+async function loadMine(user) {
+  const userSnap = await getDoc(doc(db, "users", user.uid));
+  const entries = (userSnap.data()?.myreview ?? []).filter(
+    (e) => e?.bookId && e?.reviewId
+  );
+
+  const reviews = await Promise.all(
+    entries.map(async ({ bookId, reviewId }) => {
+      const snap = await getDoc(doc(db, "books", bookId, "review", reviewId));
+      return snap.exists() ? { id: snap.id, bookId, ...snap.data() } : null;
+    })
+  );
+  return reviews.filter(Boolean);
+}
+
 // Reviews are for signed-in users only.
 onAuthReady(async (user) => {
   if (!user) {
@@ -93,20 +119,10 @@ onAuthReady(async (user) => {
   showMessage("Loading reviews…");
 
   try {
-    const q = mineOnly
-      ? query(collection(db, "reviews"), where("userId", "==", user.uid))
-      : query(collection(db, "reviews"), orderBy("createdAt", "desc"));
-    const snapshot = await getDocs(q);
-
-    allReviews = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-
-    // "Mine" is sorted here so it doesn't need a Firestore index.
-    if (mineOnly) {
-      allReviews.sort(
-        (a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0)
-      );
-    }
-
+    allReviews = mineOnly ? await loadMine(user) : await loadAll();
+    allReviews.sort(
+      (a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0)
+    );
     render();
   } catch (error) {
     console.error("Could not load reviews:", error);

@@ -1,10 +1,12 @@
 import { auth, db } from "./firebaseConfig.js";
 import { onAuthReady } from "./authentication.js";
 import {
+  arrayRemove,
   deleteDoc,
   doc,
   getDoc,
   serverTimestamp,
+  setDoc,
   updateDoc,
 } from "firebase/firestore";
 import { createCover, renderStars, formatDate } from "./reviewUtils.js";
@@ -23,6 +25,8 @@ const cancelButton = document.getElementById("cancelEdit");
 const actionMessage = document.getElementById("actionMessage");
 
 let reviewRef = null;
+let bookId = null;
+let reviewId = null;
 let review = null;
 let isOwner = false;
 let rating = 0;
@@ -135,6 +139,18 @@ deleteButton.addEventListener("click", async () => {
 
   try {
     await deleteDoc(reviewRef);
+
+    // Also remove it from the user's myreview list.
+    try {
+      await setDoc(
+        doc(db, "users", auth.currentUser.uid),
+        { myreview: arrayRemove({ bookId, reviewId }) },
+        { merge: true }
+      );
+    } catch (error) {
+      console.error("Review deleted, but could not update myreview:", error);
+    }
+
     window.location.href = "./reviews.html";
   } catch (error) {
     console.error("Could not delete review:", error);
@@ -150,21 +166,23 @@ onAuthReady(async (user) => {
     return;
   }
 
-  const id = new URLSearchParams(window.location.search).get("id");
-  if (!id) {
+  const params = new URLSearchParams(window.location.search);
+  bookId = params.get("book");
+  reviewId = params.get("id");
+  if (!bookId || !reviewId) {
     message.textContent = "No review selected.";
     return;
   }
 
   try {
-    reviewRef = doc(db, "reviews", id);
+    reviewRef = doc(db, "books", bookId, "review", reviewId);
     const snapshot = await getDoc(reviewRef);
     if (!snapshot.exists()) {
       message.textContent = "This review could not be found.";
       return;
     }
 
-    review = { ...snapshot.data(), edited: Boolean(snapshot.data().editedAt) };
+    review = { ...snapshot.data(), bookId, edited: Boolean(snapshot.data().editedAt) };
     isOwner = review.userId === auth.currentUser?.uid;
 
     render();
