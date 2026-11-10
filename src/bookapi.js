@@ -25,11 +25,30 @@ const bookid = urlParms.get("bookid");
 
 try {
   const bookData = await getBookData(bookid);
+  const info = bookData.volumeInfo; 
+
   console.log(bookData);
-  document.getElementById("title").textContent = bookData.volumeInfo.title;
-  document.getElementById("author").textContent = `By ${bookData.volumeInfo.authors.join(", ")}`;
-  document.getElementById("summary").innerHTML = bookData.volumeInfo.description;
-  document.getElementById("cover").src = bookData.volumeInfo.imageLinks.medium;
+  document.getElementById("title").textContent = info.title ?? "Untitled"; 
+  document.getElementById("author").textContent = `By ${(info.authors ?? ["Unknown author"]).join(", ")}`; 
+  document.getElementById("summary").innerHTML = info.description ?? "No description available."; 
+
+
+  const coverImg = document.getElementById("cover");
+  const links = info.imageLinks; 
+  const coverUrl =
+    links?.medium ?? links?.large ?? links?.small ?? links?.thumbnail ?? links?.smallThumbnail; 
+
+  if (coverUrl) {
+    
+    coverImg.addEventListener(
+      "error",
+      () => {
+        coverImg.src = "/images/image.png";
+      },
+      { once: true }
+    );
+    coverImg.src = coverUrl.replace("http://", "https://"); 
+  } 
 } catch (error) {
   console.error("Error handling form submission:", error);
 }

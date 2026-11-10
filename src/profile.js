@@ -2,6 +2,7 @@ import { auth, db } from "./firebaseConfig.js";
 import { onAuthReady } from "./authentication.js";
 import { updateProfile } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import { getBookById } from "./master.js";
 
 const form = document.getElementById("profileForm");
 const fields = document.getElementById("profileFields");
@@ -12,6 +13,9 @@ const countryInput = document.getElementById("countryInput");
 const identityInput = document.getElementById("identityInput");
 const saveButton = document.getElementById("saveProfile");
 const message = document.getElementById("profileMessage");
+const favoritesList = document.getElementById("favoritesList");
+const favoritesMessage = document.getElementById("favoritesMessage");
+const favoriteTemplate = document.getElementById("favorite-card-template");
 
 let loadedUserId = null;
 let saving = false;
@@ -29,6 +33,8 @@ onAuthReady(async (user) => {
   form.reset();
   heading.textContent = "My profile";
   emailDisplay.textContent = "";
+  favoritesList.replaceChildren();
+  favoritesMessage.textContent = "";
 
   if (!user) {
     window.location.replace("/html/login.html");
@@ -61,6 +67,9 @@ onAuthReady(async (user) => {
         ? "Your profile is loaded. You can edit your details below."
         : "Complete your details and select Save changes."
     );
+
+    showFavorites(profile.favorites ?? [], user.uid);
+    
   } catch (error) {
     if (auth.currentUser?.uid !== user.uid) return;
 
@@ -150,3 +159,54 @@ form.addEventListener("submit", async (event) => {
     }
   }
 });
+
+
+function renderFavorite(book) {
+  const info = book.volumeInfo;
+  const title = info.title ?? "Untitled";
+  const card = favoriteTemplate.content.firstElementChild.cloneNode(true);
+
+  const link = card.querySelector(".favorite-title");
+  link.textContent = title;
+  link.title = title; // full name on hover, since long names get cut after 2 lines
+  link.href = `book_info.html?bookid=${book.id}`;
+
+  const cover = card.querySelector(".favorite-cover");
+  cover.alt = title;
+  const thumbnail = info.imageLinks?.thumbnail;
+  if (thumbnail) {
+    cover.src = thumbnail.replace("http://", "https://");
+  }
+
+  return card;
+}
+
+
+// Turn the saved book ids into cards
+async function showFavorites(bookIds, userId) {
+  if (bookIds.length === 0) {
+    favoritesList.replaceChildren();
+    favoritesMessage.textContent = "No favorites yet. Tap the heart on a book to save it here.";
+    return;
+  }
+
+  favoritesMessage.textContent = "Loading favorites…";
+
+  try {
+    // Newest favorite first, all requests at the same time
+    const results = await Promise.allSettled([...bookIds].reverse().map(getBookById));
+
+    // Ignore the result if the signed-in account changed
+    if (auth.currentUser?.uid !== userId) return;
+
+    const cards = results
+      .filter((result) => result.status === "fulfilled")
+      .map((result) => renderFavorite(result.value));
+
+    favoritesList.replaceChildren(...cards);
+    favoritesMessage.textContent = cards.length ? "" : "Could not load your favorites.";
+  } catch (error) {
+    console.error("Could not show favorites:", error);
+    favoritesMessage.textContent = "Could not load your favorites.";
+  }
+}
