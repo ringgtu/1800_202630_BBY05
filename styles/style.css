@@ -241,6 +241,167 @@ main h2 {
 }
 
 
+/* 9. Library page: 3D Flip Book
+   ========================================================================== */
+.stage {
+  perspective: 2200px;
+  padding: 2rem 0;
+}
+
+.shelf {
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s ease;
+}
+
+.shelf.out-left {
+  opacity: 0;
+  transform: translateX(-60px);
+}
+
+.shelf.out-right {
+  opacity: 0;
+  transform: translateX(60px);
+}
+
+.book {
+  position: relative;
+  width: calc(var(--pw) * 2);
+  height: var(--ph);
+  margin: 0 auto;
+  transition: transform 0.8s ease;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+  transform: translateX(-25%);
+}
+
+.book.open {
+  transform: translateX(0);
+}
+
+.leaf,
+.base {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 50%;
+  height: 100%;
+}
+
+.leaf {
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  transition: transform 0.8s ease;
+  z-index: 2;
+}
+
+.book.open .leaf {
+  transform: rotateY(-180deg);
+}
+
+.base {
+  z-index: 1;
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+  padding: clamp(0.6rem, 2.2vw, 1.6rem);
+  font-family: Georgia, "Times New Roman", serif;
+  color: var(--text);
+  background: var(--paper);
+  box-shadow: 0 6px 18px rgba(46, 42, 38, 0.35);
+}
+
+.face.front {
+  border-radius: 2px 8px 8px 2px;
+  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0) 12%);
+}
+
+.face.back {
+  border-radius: 8px 2px 2px 8px;
+  transform: rotateY(180deg);
+  background-image: linear-gradient(to left, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0) 12%);
+}
+
+.face h2 {
+  font-size: clamp(0.9rem, 2.6vw, 1.5rem);
+}
+
+.face p {
+  font-size: clamp(0.6rem, 1.7vw, 1rem);
+  line-height: 1.55;
+}
+
+.face.cover {
+  background: linear-gradient(135deg, var(--c1), var(--c2));
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 3px solid var(--ink);
+  outline: 6px solid var(--c2);
+  outline-offset: -12px;
+}
+
+.face.cover h1 {
+  font-size: clamp(1.1rem, 3.6vw, 2.1rem);
+}
+
+.face.inside {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.face.inside .emoji {
+  font-size: clamp(2rem, 8vw, 4.5rem);
+}
+
+.face.inside img {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.book:not(.open) .leaf .face.front {
+  animation: nudge 2.4s ease-in-out infinite;
+}
+
+@keyframes nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+}
+
+.controls {
+  max-width: 460px;
+}
+
+.add-fixed {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1030;
+  box-shadow: 0 2px 8px rgba(46, 42, 38, 0.3);
+}
+
+
 /* 10. Library page: the "Add a book" pop-up
    ========================================================================== */
 div.modal {
