@@ -6,6 +6,7 @@
     <title>Book info</title>
     <link rel="stylesheet" href="/styles/style.css" />
     <script type="module" src="/src/main.js"></script>
+    <script type="module" src="/src/bookapi.js"></script>
   </head>
   <body class="position-relative m-5">
     <a href="#" class="text-reset text-decoration-none">
@@ -16,10 +17,10 @@
     <!-- Book cover -->
     <div class="d-flex justify-content-center align-items-center">
       <figure class="figure text-center">
-        <img src="/images/image.png" class="figure-img img-fluid rounded" alt="..." />
+        <img id="cover" src="/images/image.png" class="figure-img img-fluid rounded" alt="..." />
         <figcaption class="figure-caption">
-          <div class="fw-bold text-dark fs-1">Book</div>
-          <div class="text-muted fs-4">By Author</div>
+          <div class="fw-bold text-dark fs-1" id="title">Book</div>
+          <div class="text-muted fs-4" id="author">By Author</div>
         </figcaption>
       </figure>
     </div>
@@ -41,7 +42,7 @@
     </ul>
     <hr />
     <div class="d-flex justify-content-around">
-      <button type="button" class="btn btn-secondary">Add to list</button>
+      <button type="button" class="btn btn-secondary" id="test">Add to list</button>
       <button type="button" class="btn btn-secondary">Where to buy</button>
     </div>
     <hr />
@@ -51,10 +52,10 @@
         <div class="d-flex w-100 justify-content-between">
           <h5 class="mb-1">Summary</h5>
         </div>
-        <p class="mb-1">
+        <div class="mb-1" id="summary">
           Lorem ipsum dolor sit amet consectetur. Viverra facilisi sagittis etiam facilisi tristique vitae a rutrum
           porta...
-        </p>
+        </div>
       </a>
       <a href="#" class="list-group-item list-group-item-action">
         <div class="d-flex w-100 justify-content-between">
