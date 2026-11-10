@@ -22,14 +22,14 @@ async function getBookData(bookid) {
 const urlParms = new URLSearchParams(window.location.search);
 
 const bookid = urlParms.get("bookid");
-
-try {
-  const bookData = await getBookData(bookid);
-  console.log(bookData);
-  document.getElementById("title").textContent = bookData.volumeInfo.title;
-  document.getElementById("author").textContent = `By ${bookData.volumeInfo.authors.join(", ")}`;
-  document.getElementById("summary").innerHTML = bookData.volumeInfo.description;
-  document.getElementById("cover").src = bookData.volumeInfo.imageLinks.medium;
-} catch (error) {
-  console.error("Error handling form submission:", error);
+if (!bookid) {
+  document.getElementById("title").textContent = "No book selected";
+  return;
 }
+
+const v = bookData.volumeInfo || {};
+document.getElementById("title").textContent = v.title || "Untitled";
+document.getElementById("author").textContent = v.authors ? `By ${v.authors.join(", ")}` : "Unknown Author";
+document.getElementById("summary").textContent = v.description || "No description available.";
+const imgUrl = v.imageLinks?.medium || v.imageLinks?.thumbnail || v.imageLinks?.smallThumbnail || "/images/book.jpg";
+document.getElementById("cover").src = imgUrl.replace("http://", "https://");
