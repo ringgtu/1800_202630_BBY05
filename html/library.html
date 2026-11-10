@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Library</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons: needed for the icons in the navbar and the + button -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  
+  <style>
+    /* ===== color palette ===== */
+    :root {
+      --primary: #6D2432;
+      --secondary: #A44A3F;
+      --accent: #D9B382;
+      --bg: #F4ECE0;
+      --text: #2E2A26;
+      --paper: #FFFAF2;      /* book pages and pop-up: a lighter tint of the background */
+      --pw: min(42vw, 320px);          /* width of ONE page */
+      --ph: calc(var(--pw) * 1.4);     /* page height */
+    }
+    html, body { background-color: var(--bg) !important; color: var(--text); }
+    body { --bs-body-bg: var(--bg); --bs-body-color: var(--text); min-height: 100vh; overflow-x: hidden; }
+
+    /* ---------- the book ---------- */
+    .stage { perspective: 2200px; padding: 2rem 0; }
+    .shelf { transition: opacity .35s ease, transform .35s ease; }
+    .shelf.out-left  { opacity: 0; transform: translateX(-60px); }
+    .shelf.out-right { opacity: 0; transform: translateX(60px); }
+
+    .book {
+      position: relative;
+      width: calc(var(--pw) * 2);
+      height: var(--ph);
+      margin: 0 auto;
+      transition: transform .8s ease;
+      touch-action: pan-y;
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: pointer;
+      transform: translateX(-25%);
+    }
+    .book.open { transform: translateX(0); }
+
+    .leaf, .base { position: absolute; left: 50%; top: 0; width: 50%; height: 100%; }
+    .leaf {
+      transform-origin: left center;
+      transform-style: preserve-3d;
+      transition: transform .8s ease;
+      z-index: 2;
+    }
+    .book.open .leaf { transform: rotateY(-180deg); }
+    .base { z-index: 1; }
+
+    .face {
+      position: absolute; inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      overflow: hidden;
+      padding: clamp(.6rem, 2.2vw, 1.6rem);
+      font-family: Georgia, 'Times New Roman', serif;
+      color: var(--text);
+      background: var(--paper);
+      box-shadow: 0 6px 18px rgba(46, 42, 38, .35);
+    }
+    .face.front { border-radius: 2px 8px 8px 2px; background-image: linear-gradient(to right, rgba(0,0,0,.18), rgba(0,0,0,0) 12%); }
+    .face.back  { border-radius: 8px 2px 2px 8px; transform: rotateY(180deg);
+                  background-image: linear-gradient(to left, rgba(0,0,0,.18), rgba(0,0,0,0) 12%); }
+    .face h2 { font-size: clamp(.9rem, 2.6vw, 1.5rem); }
+    .face p  { font-size: clamp(.6rem, 1.7vw, 1rem); line-height: 1.55; }
+
+    .face.cover {
+      background: linear-gradient(135deg, var(--c1), var(--c2));
+      color: var(--ink);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+      border: 3px solid var(--ink); outline: 6px solid var(--c2); outline-offset: -12px;
+    }
+    .face.cover h1 { font-size: clamp(1.1rem, 3.6vw, 2.1rem); }
+
+    .face.inside { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+    .face.inside .emoji { font-size: clamp(2rem, 8vw, 4.5rem); }
+    .face.inside img { max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,.4); }
+
+    .book:not(.open) .leaf .face.front { animation: nudge 2.4s ease-in-out infinite; }
+    @keyframes nudge { 0%,100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
+
+    /* ---------- buttons (two classes = stronger than Bootstrap's .btn, whatever the load order) ---------- */
+    .controls { max-width: 460px; }
+    .btn.btn-book, .btn.btn-add {
+      --bs-btn-bg: var(--primary);
+      --bs-btn-border-color: var(--primary);
+      --bs-btn-color: var(--bg);
+      --bs-btn-hover-bg: var(--secondary);
+      --bs-btn-hover-border-color: var(--secondary);
+      --bs-btn-hover-color: var(--bg);
+      --bs-btn-active-bg: var(--secondary);
+      --bs-btn-active-border-color: var(--secondary);
+      --bs-btn-active-color: var(--bg);
+      --bs-btn-disabled-bg: var(--primary);
+      --bs-btn-disabled-border-color: var(--primary);
+      --bs-btn-disabled-color: var(--bg);
+      font-weight: 600;
+    }
+    .btn.btn-cancel {
+      --bs-btn-bg: transparent;
+      --bs-btn-border-color: var(--primary);
+      --bs-btn-color: var(--primary);
+      --bs-btn-hover-bg: var(--accent);
+      --bs-btn-hover-border-color: var(--primary);
+      --bs-btn-hover-color: var(--text);
+      --bs-btn-active-bg: var(--accent);
+      --bs-btn-active-border-color: var(--primary);
+      --bs-btn-active-color: var(--text);
+    }
+
+    /* the Add book button stays in the top right corner, even when the page scrolls */
+    .add-fixed { position: fixed; top: 1rem; right: 1rem; z-index: 1030; box-shadow: 0 2px 8px rgba(46, 42, 38, .3); }
+
+    /* ---------- "Add a book" pop-up ---------- */
+    div.modal { --bs-modal-bg: var(--paper); --bs-modal-color: var(--text); --bs-modal-border-color: var(--accent); --bs-modal-header-border-color: var(--accent); --bs-modal-footer-border-color: var(--accent); }
+    .modal-title { color: var(--primary); }
+    .modal .form-control { border-color: var(--accent); }
+    .modal .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 .25rem rgba(109, 36, 50, .25); }
+    .modal .list-group {
+      --bs-list-group-bg: transparent;
+      --bs-list-group-color: var(--text);
+      --bs-list-group-border-color: var(--accent);
+      --bs-list-group-action-color: var(--text);
+      --bs-list-group-action-hover-bg: var(--accent);
+      --bs-list-group-action-hover-color: var(--text);
+      --bs-list-group-active-bg: var(--primary);
+      --bs-list-group-active-border-color: var(--primary);
+      --bs-list-group-active-color: var(--bg);
+    }
+    .result-thumb { width: 40px; height: 60px; object-fit: cover; border-radius: 3px; flex-shrink: 0; }
+
+    /* ---------- bottom navbar (from site-navbar.js) ---------- */
+    site-navbar .navbar { background-color: var(--primary) !important; }
+    site-navbar .nav-link { color: var(--bg) !important; }
+    site-navbar .nav-link:hover { color: var(--accent) !important; }
+  </style>
+</head>
+<body>
+
+<div class="container text-center py-3 px-5">
+  <h1 class="h4 mb-0" id="heading" style="color: var(--primary)">My Library</h1>
+  <small class="opacity-75" id="hint"></small>
+</div>
+
+<div class="stage">
+  <div class="shelf" id="shelf">
+    <div class="book" id="book"></div>
+  </div>
+</div>
+
+<div class="controls mx-auto d-flex justify-content-between align-items-center px-3 pb-3">
+  <button class="btn btn-book" id="prev">&larr; Previous book</button>
+  <span id="label" class="small opacity-75"></span>
+  <button class="btn btn-book" id="next">Next book &rarr;</button>
+</div>
+
+<!-- Add book button: fixed in the top right corner (shown once someone is logged in) -->
+<button type="button" class="btn btn-add add-fixed d-none" id="addBtn" data-bs-toggle="modal" data-bs-target="#addModal" aria-label="Add book">
+  <i class="bi bi-plus-lg"></i><span class="d-none d-sm-inline ms-1">Add book</span>
+</button>
+
+<!-- Add book pop-up -->
+<div class="modal fade" id="addModal" tabindex="-1" aria-labelledby="addModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title h5" id="addModalLabel">Add a book</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="searchForm" class="input-group mb-3">
+          <input type="text" id="searchInput" class="form-control" placeholder="Title, author or ISBN" aria-label="Search for a book" required>
+          <button class="btn btn-add" type="submit">Search</button>
+        </form>
+        <div id="searchStatus" class="small mb-2" role="status"></div>
+        <div id="results" class="list-group mb-3"></div>
+        <div id="noteBox" class="d-none">
+          <label for="noteInput" class="form-label fw-semibold">Your note</label>
+          <textarea id="noteInput" class="form-control" rows="3" maxlength="500" placeholder="Why are you adding this book? (optional)"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-add" id="saveBtn" disabled>Save book</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom navbar (draws itself, and includes its own spacer) -->
+<site-navbar></site-navbar>
+
+<!-- Bootstrap's JavaScript: needed for the pop-up -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Loads your navbar class from src/components -->
+<script type="module" src="/src/components/site-navbar.js"></script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc }
+    from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+  import { getAuth, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyD-4VdeIn1jy-cn7W-FlHRD76RIiabyVfk",
+    authDomain: "bby05-comp1800.firebaseapp.com",
+    projectId: "bby05-comp1800",
+    storageBucket: "bby05-comp1800.firebasestorage.app",
+    messagingSenderId: "983802359020",
+    appId: "1:983802359020:web:b7859e1cc191afd56389c9"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  const palette = [
+    { c1: '#6D2432', c2: '#2E2A26', ink: '#D9B382', emoji: '📕' },
+    { c1: '#A44A3F', c2: '#6D2432', ink: '#F4ECE0', emoji: '📙' },
+    { c1: '#D9B382', c2: '#A44A3F', ink: '#2E2A26', emoji: '📒' },
+    { c1: '#2E2A26', c2: '#6D2432', ink: '#D9B382', emoji: '📓' }
+  ];
+
+  /* Text from users or from Google Books must never be inserted as raw HTML, so escape it first */
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  /* Google Books descriptions contain HTML tags, so turn them into plain text */
+  const plain = html => new DOMParser().parseFromString(html ?? '', 'text/html').body.textContent.trim();
+
+  const thumb = v => (v.imageLinks?.thumbnail ?? v.imageLinks?.smallThumbnail ?? '').replace('http://', 'https://');
+  const looksLikeIsbn = s => /^[\d-]{10,17}X?$/i.test(String(s).trim());
+
+  /* ============ Google Books ============ */
+
+  /* Looks one book up by ISBN or by volume ID (no API key needed) */
+  async function lookupBook(id) {
+    const clean = String(id ?? '').trim();
+    if (!clean) throw new Error('No book ID');
+    const isIsbn = looksLikeIsbn(clean);
+    const url = isIsbn
+      ? `https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(clean.replace(/-/g, ''))}&maxResults=1`
+      : `https://www.googleapis.com/books/v1/volumes/${encodeURIComponent(clean)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Google Books lookup failed: ' + res.status);
+    const json = await res.json();
+    const item = isIsbn ? json.items?.[0] : json;
+    if (!item?.volumeInfo) throw new Error('Book not found: ' + clean);
+    const v = item.volumeInfo;
+    return {
+      title: v.title ?? clean,
+      authors: (v.authors ?? []).join(', '),
+      description: plain(v.description),
+      image: thumb(v)
+    };
+  }
+
+  /* Searches Google Books by title, author or ISBN and returns a short list */
+  async function searchBooks(text) {
+    const q = text.trim();
+    const query = looksLikeIsbn(q) ? `isbn:${q.replace(/-/g, '')}` : q;
+    const res = await fetch(
+      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=8&printType=books`
+    );
+    if (!res.ok) throw new Error('Search failed: ' + res.status);
+    const json = await res.json();
+    return (json.items ?? [])
+      .filter(it => it.volumeInfo)
+      .map(it => ({
+        id: it.id,
+        title: it.volumeInfo.title ?? 'Untitled',
+        authors: (it.volumeInfo.authors ?? []).join(', '),
+        image: thumb(it.volumeInfo)
+      }));
+  }
+
+  /* ============ Firestore ============
+     users/{uid}.book is a map. Each book is one entry in it, keyed by its Google Books ID:
+       book = { "<volumeId>": { book: "<volumeId>", "book info": "the user's note", added: 1700000000000 } }
+     An older single book { book: "...", "book info": "..." } sitting directly in the map still works. */
+  let books = [];
+  async function loadBooks(uid) {
+    const snap = await getDoc(doc(db, "users", uid));
+    if (!snap.exists()) return [];
+    const field = snap.data().book;
+    if (!field || typeof field !== 'object') return [];
+
+    const entries = [];
+    if (typeof field.book === 'string' || 'book info' in field) {
+      entries.push(['legacy', { book: field.book, "book info": field["book info"], added: 0 }]);
+    }
+    for (const [key, value] of Object.entries(field)) {
+      if (value && typeof value === 'object') entries.push([key, value]);
+    }
+    entries.sort((a, b) => (a[1].added ?? 0) - (b[1].added ?? 0));     // oldest first
+
+    return Promise.all(entries.map(async ([key, info], i) => {
+      const note = info["book info"] ?? '';
+      let title = info.book ?? key, authors = '', description = '', image = '';
+      try {
+        ({ title, authors, description, image } = await lookupBook(info.book));
+      } catch (err) {
+        console.warn(err);          // if the lookup fails we still show the ID and the note
+      }
+      const short = description.length > 380 ? description.slice(0, 380).trimEnd() + '…' : description;
+      return {
+        ...palette[i % palette.length],
+        id: key,
+        name: title,
+        subtitle: authors,
+        image,
+        page: `<h2>${esc(title)}</h2>`
+            + (short ? `<p>${esc(short)}</p>` : '')
+            + (note ? `<p><em>${esc(note)}</em></p>` : '')
+      };
+    }));
+  }
+
+  /* ============ the book on the page ============ */
+  const shelf = document.getElementById('shelf');
+  const book = document.getElementById('book');
+  const hint = document.getElementById('hint');
+  let bookIdx = 0;
+  let busy = false;
+  let currentUser = null;
+
+  function buildBook(i) {
+    const b = books[i];
+    book.classList.remove('open');
+    book.style.setProperty('--c1', b.c1);
+    book.style.setProperty('--c2', b.c2);
+    book.style.setProperty('--ink', b.ink);
+    book.innerHTML = `
+      <div class="base"><div class="face front">${b.page}</div></div>
+      <div class="leaf">
+        <div class="face front cover"><h1>${esc(b.name)}</h1><p class="mb-0">${esc(b.subtitle)}</p></div>
+        <div class="face back inside">${b.image
+          ? `<img src="${esc(b.image)}" alt="Cover of ${esc(b.name)}">`
+          : `<div class="emoji">${b.emoji}</div>`}</div>
+      </div>`;
+    document.getElementById('heading').textContent = b.name;
+    document.getElementById('label').textContent = `Book ${i + 1} of ${books.length}`;
+    updateHint();
+  }
+
+  function updateHint() {
+    hint.textContent = book.classList.contains('open')
+      ? 'Tap the book to close it. Swipe for another book.'
+      : 'Tap the book to open it';
+  }
+
+  function switchBook(dir) {
+    if (busy || !books.length) return;
+    busy = true;
+    shelf.classList.add(dir > 0 ? 'out-left' : 'out-right');
+    setTimeout(() => {
+      bookIdx = (bookIdx + dir + books.length) % books.length;
+      book.style.transition = 'none';
+      buildBook(bookIdx);
+      shelf.classList.remove('out-left', 'out-right');
+      shelf.classList.add(dir > 0 ? 'out-right' : 'out-left');
+      void shelf.offsetWidth;
+      requestAnimationFrame(() => {
+        book.style.transition = '';
+        shelf.classList.remove('out-left', 'out-right');
+        setTimeout(() => { busy = false; }, 350);
+      });
+    }, 350);
+  }
+
+  /* reloads the user's books from Firestore and shows the one with this ID */
+  async function refresh(showId) {
+    books = await loadBooks(currentUser.uid);
+    if (!books.length) {
+      book.innerHTML = '';
+      document.getElementById('heading').textContent = 'My Library';
+      document.getElementById('label').textContent = '';
+      hint.textContent = 'No books yet. Press "Add book" to add your first one.';
+      return;
+    }
+    bookIdx = Math.max(0, books.findIndex(b => b.id === showId));
+    buildBook(bookIdx);
+  }
+
+  document.getElementById('next').addEventListener('click', () => switchBook(1));
+  document.getElementById('prev').addEventListener('click', () => switchBook(-1));
+  document.addEventListener('keydown', e => {
+    if (e.target.closest('input, textarea')) return;      // don't switch books while typing
+    if (e.key === 'ArrowRight') switchBook(1);
+    if (e.key === 'ArrowLeft') switchBook(-1);
+  });
+
+  /* tap = open/close the book, swipe = another book */
+  let startX = null;
+  book.addEventListener('pointerdown', e => { startX = e.clientX; });
+  book.addEventListener('pointerup', e => {
+    if (startX === null || !books.length) { startX = null; return; }
+    const dx = e.clientX - startX;
+    startX = null;
+    if (dx < -40) switchBook(1);
+    else if (dx > 40) switchBook(-1);
+    else if (Math.abs(dx) <= 10) { book.classList.toggle('open'); updateHint(); }
+  });
+  book.addEventListener('pointercancel', () => { startX = null; });
+
+  /* ============ the "Add book" pop-up ============ */
+  const addModalEl = document.getElementById('addModal');
+  const addModal = bootstrap.Modal.getOrCreateInstance(addModalEl);
+  const searchForm = document.getElementById('searchForm');
+  const searchInput = document.getElementById('searchInput');
+  const searchStatus = document.getElementById('searchStatus');
+  const resultsEl = document.getElementById('results');
+  const noteBox = document.getElementById('noteBox');
+  const noteInput = document.getElementById('noteInput');
+  const saveBtn = document.getElementById('saveBtn');
+  let selected = null;           // the search result the user picked
+
+  function resetModal() {
+    selected = null;
+    searchInput.value = '';
+    searchStatus.textContent = '';
+    resultsEl.innerHTML = '';
+    noteInput.value = '';
+    noteBox.classList.add('d-none');
+    saveBtn.disabled = true;
+  }
+  addModalEl.addEventListener('show.bs.modal', resetModal);
+  addModalEl.addEventListener('shown.bs.modal', () => searchInput.focus());
+
+  function selectResult(item, button) {
+    resultsEl.querySelectorAll('.active').forEach(el => el.classList.remove('active'));
+    button.classList.add('active');
+    selected = item;
+    noteBox.classList.remove('d-none');
+    saveBtn.disabled = false;
+    noteInput.focus();
+  }
+
+  function renderResults(list) {
+    resultsEl.innerHTML = '';
+    list.forEach(item => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'list-group-item list-group-item-action d-flex gap-3 align-items-center';
+      if (item.image) {
+        const img = document.createElement('img');
+        img.src = item.image;
+        img.alt = '';
+        img.className = 'result-thumb';
+        button.append(img);
+      }
+      const text = document.createElement('div');
+      const title = document.createElement('div');
+      title.className = 'fw-semibold';
+      title.textContent = item.title;           // textContent, so nothing from Google Books runs as HTML
+      const authors = document.createElement('div');
+      authors.className = 'small';
+      authors.textContent = item.authors;
+      text.append(title, authors);
+      button.append(text);
+      button.addEventListener('click', () => selectResult(item, button));
+      resultsEl.append(button);
+    });
+  }
+
+  searchForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const text = searchInput.value.trim();
+    if (!text) return;
+    selected = null;
+    saveBtn.disabled = true;
+    noteBox.classList.add('d-none');
+    resultsEl.innerHTML = '';
+    searchStatus.textContent = 'Searching…';
+    try {
+      const list = await searchBooks(text);
+      searchStatus.textContent = list.length ? 'Pick a book:' : 'No books found. Try a different title, author or ISBN.';
+      renderResults(list);
+    } catch (err) {
+      console.error(err);
+      searchStatus.textContent = 'Could not reach Google Books. Check your internet and try again.';
+    }
+  });
+
+  saveBtn.addEventListener('click', async () => {
+    if (!selected || !currentUser) return;
+    saveBtn.disabled = true;
+    try {
+      // merge: true keeps the user's other fields and their other books
+      await setDoc(doc(db, "users", currentUser.uid), {
+        book: {
+          [selected.id]: {
+            book: selected.id,
+            "book info": noteInput.value.trim(),
+            added: Date.now()
+          }
+        }
+      }, { merge: true });
+
+      addModal.hide();
+      await refresh(selected.id);
+      setTimeout(() => { book.classList.add('open'); updateHint(); }, 400);   // open the new book
+    } catch (err) {
+      console.error(err);
+      searchStatus.textContent = 'Could not save the book. Press F12 and check the Console.';
+      saveBtn.disabled = false;
+    }
+  });
+
+  /* ============ start: wait for the login, then load ============ */
+  hint.textContent = 'Loading books…';
+  onAuthStateChanged(auth, user => {
+    currentUser = user;
+    const addBtn = document.getElementById('addBtn');
+    if (!user) {
+      addBtn.classList.add('d-none');
+      hint.innerHTML = 'Please <a href="/html/login.html" style="color: var(--primary)">log in</a> to see your library';
+      return;
+    }
+    addBtn.classList.remove('d-none');
+    refresh().catch(err => {
+      console.error(err);
+      hint.textContent = 'Could not load books. Press F12 and check the Console.';
+    });
+  });
+</script>
+</body>
+</html> 

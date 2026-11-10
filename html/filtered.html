@@ -6,6 +6,7 @@
     <title>Filtered</title>
 
     <script type="module" src="/src/main.js"></script>
+    <link rel="stylesheet" href="/styles/style.css">
   </head>
 
   <body>
@@ -151,5 +152,8 @@
     </main>
 
     <site-navbar></site-navbar>
+
+    <!-- The shared palette. It is the LAST thing on the page, so it always wins over Bootstrap. -->
+    <link rel="stylesheet" href="/styles/style.css" />
   </body>
 </html>
