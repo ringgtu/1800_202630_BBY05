@@ -54,8 +54,10 @@
       <h2 class="h4 mb-3" id="results-heading">Found 3 Results:</h2>
       <br />
 
-      <div class="row row-cols-1 row-cols-lg-2 g-4" id="results">
-        <!-- Book Card-->
+      <div class="row row-cols-1 row-cols-lg-2 g-4" id="results"></div>
+
+      <!-- Book card template  -->
+      <template id="book-card-template">
         <div class="col">
           <div class="card border-0 mb-4">
             <div class="row g-3">
@@ -69,97 +71,19 @@
                     <h3 class="h5 mb-0 me-2">
                       <a href="book_info.html" class="book-title text-body text-decoration-none stretched-link">Book</a>
                     </h3>
-                    <span class="badge rounded-pill bg-secondary-subtle text-body fw-normal fs-6 px-3 py-2">Tag</span>
-                    <span class="badge rounded-pill bg-secondary-subtle text-body fw-normal fs-6 px-3 py-2">Tag</span>
-                    <span class="badge rounded-pill bg-secondary-subtle text-body fw-normal fs-6 px-3 py-2">Tag</span>
+
                   </div>
-                  <button
-                    class="btn btn-link text-body p-0 fs-4 position-relative z-2"
-                    type="button"
-                    aria-label="Favorite">
+                  <button class="btn btn-link text-body p-0 fs-4 position-relative z-2 fav-btn" type="button" aria-label="Favorite">
                     <i class="bi bi-heart"></i>
                   </button>
                 </div>
 
-                <p class="mt-2 mb-0 book-desc">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur nec risus euismod, consequat augue
-                  quis, vulputate felis
-                </p>
+                <p class="mt-2 mb-0 book-desc"></p>
               </div>
             </div>
           </div>
         </div>
-
-        <!-- Book Card-->
-        <div class="col">
-          <div class="card border-0 mb-4">
-            <div class="row g-3">
-              <div class="col-4 col-md-3">
-                <img src="/images/book.jpg" class="img-fluid rounded" alt="Book cover" />
-              </div>
-
-              <div class="col-8 col-md-9">
-                <div class="d-flex justify-content-between align-items-start">
-                  <div class="d-flex flex-wrap align-items-center gap-2">
-                    <h3 class="h5 mb-0 me-2">
-                      <a href="#" class="text-body text-decoration-none stretched-link">Book</a>
-                    </h3>
-                    <span class="badge rounded-pill bg-secondary-subtle text-body fw-normal fs-6 px-3 py-2">Tag</span>
-                    <span class="badge rounded-pill bg-secondary-subtle text-body fw-normal fs-6 px-3 py-2">Tag</span>
-                    <span class="badge rounded-pill bg-secondary-subtle text-body fw-normal fs-6 px-3 py-2">Tag</span>
-                  </div>
-                  <button
-                    class="btn btn-link text-body p-0 fs-4 position-relative z-2"
-                    type="button"
-                    aria-label="Favorite">
-                    <i class="bi bi-heart"></i>
-                  </button>
-                </div>
-
-                <p class="mt-2 mb-0">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur nec risus euismod, consequat augue
-                  quis, vulputate felis
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Book Card-->
-        <div class="col">
-          <div class="card border-0 mb-4">
-            <div class="row g-3">
-              <div class="col-4 col-md-3">
-                <img src="/images/book.jpg" class="img-fluid rounded" alt="Book cover" />
-              </div>
-
-              <div class="col-8 col-md-9">
-                <div class="d-flex justify-content-between align-items-start">
-                  <div class="d-flex flex-wrap align-items-center gap-2">
-                    <h3 class="h5 mb-0 me-2">
-                      <a href="#" class="text-body text-decoration-none stretched-link">Book</a>
-                    </h3>
-                    <span class="badge rounded-pill bg-secondary-subtle text-body fw-normal fs-6 px-3 py-2">Tag</span>
-                    <span class="badge rounded-pill bg-secondary-subtle text-body fw-normal fs-6 px-3 py-2">Tag</span>
-                    <span class="badge rounded-pill bg-secondary-subtle text-body fw-normal fs-6 px-3 py-2">Tag</span>
-                  </div>
-                  <button
-                    class="btn btn-link text-body p-0 fs-4 position-relative z-2"
-                    type="button"
-                    aria-label="Favorite">
-                    <i class="bi bi-heart"></i>
-                  </button>
-                </div>
-
-                <p class="mt-2 mb-0">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur nec risus euismod, consequat augue
-                  quis, vulputate felis
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      </template>
     </main>
 
     <site-navbar></site-navbar>
