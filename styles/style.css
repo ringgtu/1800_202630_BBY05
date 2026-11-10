@@ -1,0 +1,276 @@
+/* ==========================================================================
+   Book Organization App: shared styles
+   This file must load AFTER Bootstrap, so these rules can override it.
+   ========================================================================== */
+
+
+/* 1. Palette
+   ========================================================================== */
+:root {
+  --primary: #6D2432;
+  --secondary: #A44A3F;
+  --accent: #D9B382;
+  --bg: #F4ECE0;
+  --text: #2E2A26;
+  --paper: #FFFAF2;        /* a lighter tint of --bg, for cards, book pages and pop-ups */
+
+  /* size of the library book: one page, and its height */
+  --pw: min(42vw, 320px);
+  --ph: calc(var(--pw) * 1.4);
+}
+
+
+/* 2. Base
+   ========================================================================== */
+html {
+  background-color: var(--bg);
+}
+
+body {
+  /* Bootstrap paints the page from these two variables */
+  --bs-body-bg: var(--bg);
+  --bs-body-color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.bg-body-tertiary {
+  background-color: var(--bg) !important;     /* the login page's <body> */
+}
+
+hr {
+  color: var(--accent);
+  opacity: 1;
+}
+
+.text-body-secondary {
+  color: var(--text) !important;
+  opacity: 0.75;
+}
+
+
+/* 3. Buttons
+   One shared set of colors. Two classes (.btn.btn-x) so Bootstrap's own
+   .btn-x defaults can never win, whatever the load order.
+   ========================================================================== */
+.btn.btn-primary,
+.btn.btn-secondary,
+.btn.btn-login,
+.btn.btn-book,
+.btn.btn-add {
+  --bs-btn-bg: var(--primary);
+  --bs-btn-border-color: var(--primary);
+  --bs-btn-color: var(--bg);
+
+  --bs-btn-hover-bg: var(--secondary);
+  --bs-btn-hover-border-color: var(--secondary);
+  --bs-btn-hover-color: var(--bg);
+
+  --bs-btn-active-bg: var(--secondary);
+  --bs-btn-active-border-color: var(--secondary);
+  --bs-btn-active-color: var(--bg);
+
+  --bs-btn-disabled-bg: var(--primary);
+  --bs-btn-disabled-border-color: var(--primary);
+  --bs-btn-disabled-color: var(--bg);
+}
+
+.btn-book,
+.btn-add {
+  font-weight: 600;
+}
+
+.btn.btn-cancel {
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: var(--primary);
+  --bs-btn-color: var(--primary);
+
+  --bs-btn-hover-bg: var(--accent);
+  --bs-btn-hover-border-color: var(--primary);
+  --bs-btn-hover-color: var(--text);
+
+  --bs-btn-active-bg: var(--accent);
+  --bs-btn-active-border-color: var(--primary);
+  --bs-btn-active-color: var(--text);
+}
+
+
+/* 4. Forms
+   ========================================================================== */
+.form-control {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.form-control::placeholder {
+  color: var(--text);
+  opacity: 0.6;
+}
+
+.form-control:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 0.25rem rgba(109, 36, 50, 0.25);
+}
+
+/* radio buttons and checkboxes (Bootstrap's default is blue) */
+.form-check-input {
+  border-color: var(--secondary);
+}
+
+.form-check-input:checked {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.form-check-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 0.25rem rgba(109, 36, 50, 0.25);
+}
+
+.input-group-text {
+  color: var(--text);
+}
+
+/* search box and the tag pills */
+.bg-secondary-subtle {
+  background-color: var(--accent) !important;
+}
+
+
+/* 5. Navigation and footer
+   ========================================================================== */
+
+/* top bar: home page (.page-nav) and login page */
+.page-nav,
+.login-page .navbar {
+  background-color: var(--primary) !important;
+}
+
+.login-page .navbar {
+  border-color: var(--secondary) !important;
+}
+
+.login-page .navbar-brand {
+  color: var(--bg);
+}
+
+.login-page .navbar .btn-link {
+  color: var(--accent) !important;
+}
+
+.login-page .navbar .btn-link:hover {
+  color: var(--bg) !important;
+}
+
+/* slide-out menu on small screens */
+.offcanvas {
+  --bs-offcanvas-bg: var(--primary);
+}
+
+/* bottom bar: <site-navbar> from site-navbar.js */
+site-navbar .navbar {
+  background-color: var(--primary) !important;
+}
+
+site-navbar .nav-link {
+  color: var(--bg) !important;
+}
+
+site-navbar .nav-link:hover {
+  color: var(--accent) !important;
+}
+
+/* footer on the home page */
+.page-footer {
+  background-color: var(--primary);
+  border-color: var(--secondary) !important;
+}
+
+
+/* 6. Home page
+   ========================================================================== */
+.hero-title {
+  color: var(--primary);
+}
+
+
+/* 7. Login page
+   Add class="login-page" to the <body> of login.html.
+   ========================================================================== */
+.login-page .card {
+  --bs-card-bg: var(--paper);
+}
+
+.login-page h1 {
+  color: var(--primary);
+}
+
+.login-page #toSignup,
+.login-page #toLogin {
+  color: var(--secondary);
+}
+
+.login-page #toSignup:hover,
+.login-page #toLogin:hover {
+  color: var(--primary);
+}
+
+
+/* 8. Search, filter and library pages
+   ========================================================================== */
+main h1,
+main h2 {
+  color: var(--primary);
+}
+
+.card {
+  --bs-card-bg: transparent;
+}
+
+.card h3 a {
+  color: var(--primary) !important;           /* beats Bootstrap's .text-body */
+}
+
+.card h3 a:hover {
+  color: var(--secondary) !important;
+}
+
+.btn-link .bi-heart,
+.btn-link .bi-heart-fill {
+  color: var(--secondary);
+}
+
+
+/* 10. Library page: the "Add a book" pop-up
+   ========================================================================== */
+div.modal {
+  --bs-modal-bg: var(--paper);
+  --bs-modal-color: var(--text);
+  --bs-modal-border-color: var(--accent);
+  --bs-modal-header-border-color: var(--accent);
+  --bs-modal-footer-border-color: var(--accent);
+}
+
+.modal-title {
+  color: var(--primary);
+}
+
+.modal .list-group {
+  --bs-list-group-bg: transparent;
+  --bs-list-group-color: var(--text);
+  --bs-list-group-border-color: var(--accent);
+  --bs-list-group-action-color: var(--text);
+  --bs-list-group-action-hover-bg: var(--accent);
+  --bs-list-group-action-hover-color: var(--text);
+  --bs-list-group-active-bg: var(--primary);
+  --bs-list-group-active-border-color: var(--primary);
+  --bs-list-group-active-color: var(--bg);
+}
+
+.result-thumb {
+  flex-shrink: 0;
+  width: 40px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 3px;
+}

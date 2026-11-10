@@ -15,7 +15,7 @@ const message = document.getElementById("reviewsMessage");
 let allReviews = [];
 
 heading.textContent = mineOnly ? "My reviews" : "Reviews";
-backLink.href = mineOnly ? "./profile.html" : "./main.html";
+backLink.href = mineOnly ? "./profile.html" : "./library.html";
 
 function showMessage(text, colour = "secondary") {
   message.textContent = text;

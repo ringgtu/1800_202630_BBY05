@@ -30,7 +30,7 @@ function initAuthUI() {
     const toLoginBtn = document.getElementById('toLogin');
     const loginForm = document.getElementById('loginForm');
     const signupForm = document.getElementById('signupForm');
-    const redirectUrl = 'main.html';
+    const redirectUrl = '/html/library.html';
 
     // --- Helper Functions ---
     // Toggle element visibility

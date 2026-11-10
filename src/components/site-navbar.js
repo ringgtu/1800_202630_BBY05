@@ -17,7 +17,7 @@ class SiteNavbar extends HTMLElement {
             </li>
 
             <li class="nav-item flex-fill">
-              <a class="nav-link text-dark" href="./main.html">
+              <a class="nav-link text-dark" href="./library.html">
                 <i class="bi bi-book-half fs-1 d-block"
                    aria-hidden="true"></i>
                 <span>My Library</span>
