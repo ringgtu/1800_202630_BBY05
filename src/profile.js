@@ -17,20 +17,117 @@ const favoritesList = document.getElementById("favoritesList");
 const favoritesMessage = document.getElementById("favoritesMessage");
 const favoriteTemplate = document.getElementById("favorite-card-template");
 
+// View / navigation elements
+const profileCard = document.getElementById("profileCard");
+const profileSummary = document.getElementById("profileSummary");
+const profileHint = document.getElementById("profileHint");
+const profileChevron = document.getElementById("profileChevron");
+const profileView = document.getElementById("profileView");
+const profileExtras = document.getElementById("profileExtras");
+const viewName = document.getElementById("viewName");
+const viewCountry = document.getElementById("viewCountry");
+const viewIdentity = document.getElementById("viewIdentity");
+const editButton = document.getElementById("editProfile");
+const cancelButton = document.getElementById("cancelEdit");
+const backButton = document.getElementById("backToProfile");
+
 let loadedUserId = null;
 let saving = false;
 
-// Show feedback underneath the form.
+// "overview" = profile page, "detail" = your full profile, "edit" = edit form
+let mode = "overview";
+
+// The last saved details. Used to fill the form and to undo on Cancel.
+let savedData = { name: "", country: "", identity: "" };
+
+// Show feedback underneath the profile card.
 function showMessage(text, colour = "secondary") {
   message.textContent = text;
   message.className = `mt-3 mb-0 text-${colour}`;
 }
+
+// Show the right parts of the page for each mode.
+function setMode(newMode) {
+  mode = newMode;
+  const loaded = Boolean(loadedUserId);
+
+  const overview = mode === "overview";
+  const detail = mode === "detail";
+  const edit = mode === "edit";
+
+  profileExtras.hidden = !overview; // Favorites, Lists, My reviews
+  profileHint.hidden = !(overview && loaded);
+  profileChevron.hidden = !(overview && loaded);
+  profileView.hidden = !detail;
+  form.hidden = !edit;
+  editButton.hidden = !detail; // Edit only appears once the profile is open
+  backButton.hidden = !detail;
+
+  profileCard.style.cursor = overview && loaded ? "pointer" : "default";
+}
+
+// Show the saved details as plain text.
+function renderView() {
+  heading.textContent = savedData.name || "My profile";
+  viewName.textContent = savedData.name || "—";
+  viewCountry.textContent = savedData.country || "—";
+  viewIdentity.textContent = savedData.identity || "—";
+}
+
+// Put the saved details into the form inputs.
+function fillForm() {
+  nameInput.value = savedData.name;
+  countryInput.value = savedData.country;
+  identityInput.value = savedData.identity;
+}
+
+// Profile page -> full profile
+function openProfile() {
+  if (mode !== "overview" || !loadedUserId) return;
+  showMessage("");
+  setMode("detail");
+}
+
+profileCard.addEventListener("click", (event) => {
+  if (event.target.closest("button, form, a")) return;
+  openProfile();
+});
+profileSummary.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    openProfile();
+  }
+});
+
+// Full profile -> back to profile page
+backButton.addEventListener("click", () => {
+  if (mode === "detail") setMode("overview");
+});
+
+// Full profile -> edit form (current info pre-filled)
+editButton.addEventListener("click", () => {
+  if (mode !== "detail" || !loadedUserId || saving) return;
+  fillForm();
+  fields.disabled = false;
+  showMessage("");
+  setMode("edit");
+  nameInput.focus();
+});
+
+// Edit form -> back to full profile without saving
+cancelButton.addEventListener("click", () => {
+  if (saving) return;
+  fillForm(); // discard anything typed
+  showMessage("");
+  setMode("detail");
+});
 
 // READ: load the signed-in user's details from Firestore.
 onAuthReady(async (user) => {
   loadedUserId = null;
   fields.disabled = true;
   form.reset();
+  setMode("overview");
   heading.textContent = "My profile";
   emailDisplay.textContent = "";
   favoritesList.replaceChildren();
@@ -52,20 +149,21 @@ onAuthReady(async (user) => {
 
     const profile = snapshot.exists() ? snapshot.data() : {};
 
-    nameInput.value = profile.name ?? user.displayName ?? "";
-    countryInput.value = profile.country ?? "";
-    identityInput.value = profile.identity ?? "BookLover";
+    savedData = {
+      name: profile.name ?? user.displayName ?? "",
+      country: profile.country ?? "",
+      identity: profile.identity ?? "BookLover",
+    };
 
-    heading.textContent = nameInput.value || "My profile";
+    renderView();
+    fillForm();
     emailDisplay.textContent = user.email || profile.email || "";
 
     loadedUserId = user.uid;
-    fields.disabled = false;
+    setMode("overview");
 
     showMessage(
-      snapshot.exists()
-        ? "Your profile is loaded. You can edit your details below."
-        : "Complete your details and select Save changes."
+      snapshot.exists() ? "" : "Select your profile, then Edit, to add your details."
     );
 
     showFavorites(profile.favorites ?? [], user.uid);
@@ -120,10 +218,10 @@ form.addEventListener("submit", async (event) => {
 
     if (auth.currentUser?.uid !== user.uid) return;
 
-    heading.textContent = name;
-    nameInput.value = name;
-    countryInput.value = country;
-    identityInput.value = identity;
+    // Update the saved data, then return to the full profile.
+    savedData = { name, country, identity };
+    renderView();
+    setMode("detail");
 
     // Also update the name used by the home-page greeting.
     try {
@@ -137,7 +235,7 @@ form.addEventListener("submit", async (event) => {
 
       if (auth.currentUser?.uid === user.uid) {
         showMessage(
-          "Your profile was saved, but your home-page name could not be updated. Select Save changes to retry.",
+          "Your profile was saved, but your home-page name could not be updated. Select Edit, then Save changes to retry.",
           "warning"
         );
       }
