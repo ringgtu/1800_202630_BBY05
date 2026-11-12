@@ -15,15 +15,37 @@
         <i class="bi bi-chevron-left fs-2" aria-hidden="true"></i>
       </a>
 
-      <form id="reviewForm">
-        <fieldset id="reviewFields" disabled>
-          <h1 class="h3 text-uppercase mb-4">Add review</h1>
+      <h1 class="h3 text-uppercase mb-4">Add review</h1>
 
-          <div class="mb-3">
-            <label for="bookSelect" class="form-label">Book</label>
-            <select id="bookSelect" class="form-select" required>
-              <option value="">Choose a book…</option>
-            </select>
+      <!-- Step 1: pick a book (from your library or searched in Google Books) -->
+      <div id="bookPicker">
+        <form id="searchForm" class="input-group mb-2">
+          <input
+            id="bookSearch"
+            type="search"
+            class="form-control"
+            placeholder="Search a book: title, author or ISBN"
+            aria-label="Search for a book"
+            required
+          />
+          <button class="btn btn-primary" type="submit">Search</button>
+        </form>
+        <div id="searchStatus" class="small text-secondary mb-2" role="status"></div>
+        <div id="bookResults" class="list-group mb-4"></div>
+      </div>
+
+      <!-- Step 2: stars and comment appear once a book is chosen -->
+      <form id="reviewForm" hidden>
+        <fieldset id="reviewFields">
+          <div class="d-flex gap-3 align-items-center mb-4">
+            <div id="selectedCover"></div>
+            <div class="flex-grow-1">
+              <div id="selectedTitle" class="fw-semibold fs-5 text-break"></div>
+              <div id="selectedAuthors" class="small text-secondary text-break"></div>
+            </div>
+            <button id="changeBook" type="button" class="btn btn-outline-secondary btn-sm">
+              Change
+            </button>
           </div>
 
           <div class="mb-3">
@@ -44,8 +66,9 @@
 
           <button id="saveReview" type="submit" class="btn btn-primary">Save</button>
         </fieldset>
-        <p id="addMessage" class="mt-3 mb-0" role="status" aria-live="polite">Loading books…</p>
       </form>
+
+      <p id="addMessage" class="mt-3 mb-0" role="status" aria-live="polite"></p>
     </main>
 
     <site-navbar></site-navbar>

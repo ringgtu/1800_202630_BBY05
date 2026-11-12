@@ -40,7 +40,7 @@ function showAction(text, colour = "secondary") {
 // Fill the page from the review data.
 function render() {
   document.getElementById("detailCover").replaceChildren(
-    createCover(review.bookId, review.bookName, 110)
+    createCover(review.bookId, review.bookName, 110, review.bookImage)
   );
   document.getElementById("detailBook").textContent = review.bookName || "Book";
   document.getElementById("detailStars").replaceChildren(renderStars(review.rating || 0));
@@ -184,6 +184,12 @@ onAuthReady(async (user) => {
 
     review = { ...snapshot.data(), bookId, edited: Boolean(snapshot.data().editedAt) };
     isOwner = review.userId === auth.currentUser?.uid;
+
+    // Reviews are personal: you can only open your own.
+    if (!isOwner) {
+      message.textContent = "You can only open your own reviews.";
+      return;
+    }
 
     render();
     showViewMode();
