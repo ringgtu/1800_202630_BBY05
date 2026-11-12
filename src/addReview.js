@@ -5,30 +5,38 @@ import {
   arrayUnion,
   collection,
   doc,
-  getDocs,
   serverTimestamp,
   setDoc,
 } from "firebase/firestore";
+import { loadLibraryBooks, searchBooks } from "./libraryBooks.js";
+import { createCover } from "./reviewUtils.js";
 
+const picker = document.getElementById("bookPicker");
+const searchForm = document.getElementById("searchForm");
+const searchInput = document.getElementById("bookSearch");
+const searchStatus = document.getElementById("searchStatus");
+const results = document.getElementById("bookResults");
 const form = document.getElementById("reviewForm");
 const fields = document.getElementById("reviewFields");
-const bookSelect = document.getElementById("bookSelect");
+const selectedCover = document.getElementById("selectedCover");
+const selectedTitle = document.getElementById("selectedTitle");
+const selectedAuthors = document.getElementById("selectedAuthors");
+const changeButton = document.getElementById("changeBook");
 const starInput = document.getElementById("starInput");
 const commentInput = document.getElementById("commentInput");
 const saveButton = document.getElementById("saveReview");
 const message = document.getElementById("addMessage");
 
+let selected = null; // the book being reviewed { id, title, authors, image }
 let rating = 0;
 let saving = false;
-let ready = false;
-const bookNames = {}; // book document id -> title
 
 function showMessage(text, colour = "secondary") {
   message.textContent = text;
   message.className = `mt-3 mb-0 text-${colour}`;
 }
 
-// Five clickable stars.
+// ---------- five clickable stars ----------
 const starIcons = [];
 for (let i = 1; i <= 5; i++) {
   const button = document.createElement("button");
@@ -49,49 +57,99 @@ for (let i = 1; i <= 5; i++) {
   starInput.append(button);
 }
 
-// Only signed-in users can write a review.
-onAuthReady(async (user) => {
-  ready = false;
-  fields.disabled = true;
+// ---------- step 1: pick a book ----------
+function renderResults(list) {
+  results.replaceChildren();
+  list.forEach((book) => {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "list-group-item list-group-item-action d-flex gap-3 align-items-center";
 
+    item.append(createCover(book.id, book.title, 40, book.image));
+
+    const text = document.createElement("div");
+    const title = document.createElement("div");
+    title.className = "fw-semibold text-break";
+    title.textContent = book.title;
+    const authors = document.createElement("div");
+    authors.className = "small text-secondary text-break";
+    authors.textContent = book.authors;
+    text.append(title, authors);
+    item.append(text);
+
+    item.addEventListener("click", () => selectBook(book));
+    results.append(item);
+  });
+}
+
+function selectBook(book) {
+  selected = book;
+  selectedCover.replaceChildren(createCover(book.id, book.title, 60, book.image));
+  selectedTitle.textContent = book.title;
+  selectedAuthors.textContent = book.authors;
+  picker.hidden = true; // search disappears, stars and comment appear
+  form.hidden = false;
+  showMessage("");
+  commentInput.focus();
+}
+
+changeButton.addEventListener("click", () => {
+  if (saving) return;
+  selected = null;
+  form.hidden = true;
+  picker.hidden = false;
+  showMessage("");
+});
+
+searchForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const text = searchInput.value.trim();
+  if (!text) return;
+
+  results.replaceChildren();
+  searchStatus.textContent = "Searching…";
+  try {
+    const list = await searchBooks(text);
+    searchStatus.textContent = list.length
+      ? "Pick a book:"
+      : "No books found. Try a different title, author or ISBN.";
+    renderResults(list);
+  } catch (error) {
+    console.error(error);
+    searchStatus.textContent = "Could not reach Google Books. Check your internet and try again.";
+  }
+});
+
+// Reviews are for signed-in users only. Start with the books in my library.
+onAuthReady(async (user) => {
   if (!user) {
     window.location.replace("/html/login.html");
     return;
   }
 
+  searchStatus.textContent = "Loading your library…";
   try {
-    const snapshot = await getDocs(collection(db, "books"));
-    const books = snapshot.docs
-      .map((d) => ({ id: d.id, name: d.data().name ?? d.id }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-
-    books.forEach((book) => {
-      bookNames[book.id] = book.name;
-      const option = document.createElement("option");
-      option.value = book.id;
-      option.textContent = book.name;
-      bookSelect.append(option);
-    });
-
-    ready = true;
-    fields.disabled = false;
-    showMessage(books.length ? "" : "No books found to review yet.");
+    const books = await loadLibraryBooks(user.uid);
+    if (books.length) {
+      searchStatus.textContent = "From your library (or search above):";
+      renderResults(books);
+    } else {
+      searchStatus.textContent = "Search for the book you want to review.";
+    }
   } catch (error) {
-    console.error("Could not load books:", error);
-    showMessage("Could not load the books. Refresh the page to try again.", "danger");
+    console.error("Could not load library:", error);
+    searchStatus.textContent = "Search for the book you want to review.";
   }
 });
 
+// ---------- step 2: save ----------
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const user = auth.currentUser;
-  if (!user || !ready || saving) return;
+  if (!user || !selected || saving) return;
 
-  const bookId = bookSelect.value;
   const comment = commentInput.value.trim();
-
-  if (!bookId) return showMessage("Please choose a book.", "danger");
   if (!rating) return showMessage("Please choose a star rating.", "danger");
   if (!comment) return showMessage("Please write a comment.", "danger");
 
@@ -102,8 +160,9 @@ form.addEventListener("submit", async (event) => {
 
   try {
     // 1. The review is saved under the book: books/{bookId}/review/{reviewId}
-    const reviewRef = await addDoc(collection(db, "books", bookId, "review"), {
-      bookName: bookNames[bookId] || "",
+    const reviewRef = await addDoc(collection(db, "books", selected.id, "review"), {
+      bookName: selected.title,
+      bookImage: selected.image || "",
       userId: user.uid,
       userName: user.displayName || "Reader",
       rating,
@@ -111,11 +170,11 @@ form.addEventListener("submit", async (event) => {
       createdAt: serverTimestamp(),
     });
 
-    // 2. The review is listed in the user's myreview: users/{uid}/myreview
+    // 2. The review is listed in the user's myreview
     try {
       await setDoc(
         doc(db, "users", user.uid),
-        { myreview: arrayUnion({ bookId, reviewId: reviewRef.id }) },
+        { myreview: arrayUnion({ bookId: selected.id, reviewId: reviewRef.id }) },
         { merge: true }
       );
     } catch (error) {
