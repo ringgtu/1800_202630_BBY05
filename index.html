@@ -9,14 +9,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <!-- Other libraries go here -->
+
+    <link rel="stylesheet" href="/styles/style.css" />
   </head>
 
-  <body style="background-color: #f0dda8">
-    <nav
-      class="navbar navbar-expand-sm bg-body-tertiary d-flex justify-content-center align-items-center"
-      style="background-color: #3c1a02 !important">
+  <body class="min-vh-100 d-flex flex-column">
+    <!-- data-bs-theme="dark" makes the menu button and the slide-out menu light-on-dark -->
+    <nav class="navbar navbar-expand-sm page-nav d-flex justify-content-center align-items-center" data-bs-theme="dark">
       <div class="container-fluid">
-        <a class="navbar-brand text-light d-flex justify-content-center align-items-center" href="#">
+        <a class="navbar-brand text-light d-flex justify-content-center align-items-center" href="/index.html">
           <img src="/images/Logo_Badge.png" alt="Logo" width="50" height="50" class="d-inline-block m-3" />
           Book Organization App
         </a>
@@ -53,7 +54,7 @@
       </div>
     </nav>
 
-    <div class="container-xxl px-5 py-5" style="background-color: #f0dda8; border-color: #f0dda8">
+    <div class="container-xxl px-5 py-5 hero flex-grow-1">
       <div class="row flex-lg-row-reverse align-items-center g-5 py-5">
         <div class="col-10 col-sm-8 col-lg-6">
           <img
@@ -65,21 +66,19 @@
             loading="lazy" />
         </div>
         <div class="col-lg-6">
-          <h1 class="display-1 fw-bold text-body-emphasis lh-1 mb-4">Welcome to your digital libary</h1>
+          <h1 class="display-1 fw-bold lh-1 mb-4 hero-title">Welcome to your digital library</h1>
           <p class="lead fs-3 mb-4">
             Build your own personal library, all in one place. Add the books you own, mark the ones you've finished, and
             keep a wishlist of what to read next. Track your progress, organize your shelves, and never lose track of a
             book again.
           </p>
           <div class="d-grid gap-3 d-md-flex justify-content-md-start">
-            <a href="/html/login" class="btn btn-lg" style="background-color: #bd9444; border-color: #bd9444">
-              Login / Sign up
-            </a>
+            <a href="/html/login.html" class="btn btn-lg btn-login"> Login / Sign up </a>
           </div>
         </div>
       </div>
     </div>
-    <footer class="bg-body-tertiary border-top py-4" style="background-color: #3c1a02 !important">
+    <footer class="border-top py-4 page-footer">
       <div class="container text-center text-light">
         <p class="fw-semibold mb-1">Book Organization App</p>
         <p class="mb-1">Keep your reading organized in one place.</p>

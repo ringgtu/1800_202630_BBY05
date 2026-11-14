@@ -1,0 +1,437 @@
+/* ==========================================================================
+   Book Organization App: shared styles
+   This file must load AFTER Bootstrap, so these rules can override it.
+   ========================================================================== */
+
+
+/* 1. Palette
+   ========================================================================== */
+:root {
+  --primary: #6D2432;
+  --secondary: #A44A3F;
+  --accent: #D9B382;
+  --bg: #F4ECE0;
+  --text: #2E2A26;
+  --paper: #FFFAF2;        /* a lighter tint of --bg, for cards, book pages and pop-ups */
+
+  /* size of the library book: one page, and its height */
+  --pw: min(42vw, 320px);
+  --ph: calc(var(--pw) * 1.4);
+}
+
+
+/* 2. Base
+   ========================================================================== */
+html {
+  background-color: var(--bg);
+}
+
+body {
+  /* Bootstrap paints the page from these two variables */
+  --bs-body-bg: var(--bg);
+  --bs-body-color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.bg-body-tertiary {
+  background-color: var(--bg) !important;     /* the login page's <body> */
+}
+
+hr {
+  color: var(--accent);
+  opacity: 1;
+}
+
+.text-body-secondary {
+  color: var(--text) !important;
+  opacity: 0.75;
+}
+
+
+/* 3. Buttons
+   One shared set of colors. Two classes (.btn.btn-x) so Bootstrap's own
+   .btn-x defaults can never win, whatever the load order.
+   ========================================================================== */
+.btn.btn-primary,
+.btn.btn-secondary,
+.btn.btn-login,
+.btn.btn-book,
+.btn.btn-add {
+  --bs-btn-bg: var(--primary);
+  --bs-btn-border-color: var(--primary);
+  --bs-btn-color: var(--bg);
+
+  --bs-btn-hover-bg: var(--secondary);
+  --bs-btn-hover-border-color: var(--secondary);
+  --bs-btn-hover-color: var(--bg);
+
+  --bs-btn-active-bg: var(--secondary);
+  --bs-btn-active-border-color: var(--secondary);
+  --bs-btn-active-color: var(--bg);
+
+  --bs-btn-disabled-bg: var(--primary);
+  --bs-btn-disabled-border-color: var(--primary);
+  --bs-btn-disabled-color: var(--bg);
+}
+
+.btn-book,
+.btn-add {
+  font-weight: 600;
+}
+
+.btn.btn-cancel {
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: var(--primary);
+  --bs-btn-color: var(--primary);
+
+  --bs-btn-hover-bg: var(--accent);
+  --bs-btn-hover-border-color: var(--primary);
+  --bs-btn-hover-color: var(--text);
+
+  --bs-btn-active-bg: var(--accent);
+  --bs-btn-active-border-color: var(--primary);
+  --bs-btn-active-color: var(--text);
+}
+
+
+/* 4. Forms
+   ========================================================================== */
+.form-control {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.form-control::placeholder {
+  color: var(--text);
+  opacity: 0.6;
+}
+
+.form-control:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 0.25rem rgba(109, 36, 50, 0.25);
+}
+
+/* radio buttons and checkboxes (Bootstrap's default is blue) */
+.form-check-input {
+  border-color: var(--secondary);
+}
+
+.form-check-input:checked {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.form-check-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 0.25rem rgba(109, 36, 50, 0.25);
+}
+
+.input-group-text {
+  color: var(--text);
+}
+
+/* search box and the tag pills */
+.bg-secondary-subtle {
+  background-color: var(--accent) !important;
+}
+
+
+/* 5. Navigation and footer
+   ========================================================================== */
+
+/* top bar: home page (.page-nav) and login page */
+.page-nav,
+.login-page .navbar {
+  background-color: var(--primary) !important;
+}
+
+.login-page .navbar {
+  border-color: var(--secondary) !important;
+}
+
+.login-page .navbar-brand {
+  color: var(--bg);
+}
+
+.login-page .navbar .btn-link {
+  color: var(--accent) !important;
+}
+
+.login-page .navbar .btn-link:hover {
+  color: var(--bg) !important;
+}
+
+/* slide-out menu on small screens */
+.offcanvas {
+  --bs-offcanvas-bg: var(--primary);
+}
+
+/* bottom bar: <site-navbar> from site-navbar.js */
+site-navbar .navbar {
+  background-color: var(--primary) !important;
+}
+
+site-navbar .nav-link {
+  color: var(--bg) !important;
+}
+
+site-navbar .nav-link:hover {
+  color: var(--accent) !important;
+}
+
+/* footer on the home page */
+.page-footer {
+  background-color: var(--primary);
+  border-color: var(--secondary) !important;
+}
+
+
+/* 6. Home page
+   ========================================================================== */
+.hero-title {
+  color: var(--primary);
+}
+
+
+/* 7. Login page
+   Add class="login-page" to the <body> of login.html.
+   ========================================================================== */
+.login-page .card {
+  --bs-card-bg: var(--paper);
+}
+
+.login-page h1 {
+  color: var(--primary);
+}
+
+.login-page #toSignup,
+.login-page #toLogin {
+  color: var(--secondary);
+}
+
+.login-page #toSignup:hover,
+.login-page #toLogin:hover {
+  color: var(--primary);
+}
+
+
+/* 8. Search, filter and library pages
+   ========================================================================== */
+main h1,
+main h2 {
+  color: var(--primary);
+}
+
+.card {
+  --bs-card-bg: transparent;
+}
+
+.card h3 a {
+  color: var(--primary) !important;           /* beats Bootstrap's .text-body */
+}
+
+.card h3 a:hover {
+  color: var(--secondary) !important;
+}
+
+.btn-link .bi-heart,
+.btn-link .bi-heart-fill {
+  color: var(--secondary);
+}
+
+
+/* 9. Library page: 3D Flip Book
+   ========================================================================== */
+.stage {
+  perspective: 2200px;
+  padding: 2rem 0;
+}
+
+.shelf {
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s ease;
+}
+
+.shelf.out-left {
+  opacity: 0;
+  transform: translateX(-60px);
+}
+
+.shelf.out-right {
+  opacity: 0;
+  transform: translateX(60px);
+}
+
+.book {
+  position: relative;
+  width: calc(var(--pw) * 2);
+  height: var(--ph);
+  margin: 0 auto;
+  transition: transform 0.8s ease;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+  transform: translateX(-25%);
+}
+
+.book.open {
+  transform: translateX(0);
+}
+
+.leaf,
+.base {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 50%;
+  height: 100%;
+}
+
+.leaf {
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  transition: transform 0.8s ease;
+  z-index: 2;
+}
+
+.book.open .leaf {
+  transform: rotateY(-180deg);
+}
+
+.base {
+  z-index: 1;
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+  padding: clamp(0.6rem, 2.2vw, 1.6rem);
+  font-family: Georgia, "Times New Roman", serif;
+  color: var(--text);
+  background: var(--paper);
+  box-shadow: 0 6px 18px rgba(46, 42, 38, 0.35);
+}
+
+.face.front {
+  border-radius: 2px 8px 8px 2px;
+  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0) 12%);
+}
+
+.face.back {
+  border-radius: 8px 2px 2px 8px;
+  transform: rotateY(180deg);
+  background-image: linear-gradient(to left, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0) 12%);
+}
+
+.face h2 {
+  font-size: clamp(0.9rem, 2.6vw, 1.5rem);
+}
+
+.face p {
+  font-size: clamp(0.6rem, 1.7vw, 1rem);
+  line-height: 1.55;
+}
+
+.face.cover {
+  background: linear-gradient(135deg, var(--c1), var(--c2));
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 3px solid var(--ink);
+  outline: 6px solid var(--c2);
+  outline-offset: -12px;
+}
+
+.face.cover h1 {
+  font-size: clamp(1.1rem, 3.6vw, 2.1rem);
+}
+
+.face.inside {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.face.inside .emoji {
+  font-size: clamp(2rem, 8vw, 4.5rem);
+}
+
+.face.inside img {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.book:not(.open) .leaf .face.front {
+  animation: nudge 2.4s ease-in-out infinite;
+}
+
+@keyframes nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+}
+
+.controls {
+  max-width: 460px;
+}
+
+.add-fixed {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1030;
+  box-shadow: 0 2px 8px rgba(46, 42, 38, 0.3);
+}
+
+
+/* 10. Library page: the "Add a book" pop-up
+   ========================================================================== */
+div.modal {
+  --bs-modal-bg: var(--paper);
+  --bs-modal-color: var(--text);
+  --bs-modal-border-color: var(--accent);
+  --bs-modal-header-border-color: var(--accent);
+  --bs-modal-footer-border-color: var(--accent);
+}
+
+.modal-title {
+  color: var(--primary);
+}
+
+.modal .list-group {
+  --bs-list-group-bg: transparent;
+  --bs-list-group-color: var(--text);
+  --bs-list-group-border-color: var(--accent);
+  --bs-list-group-action-color: var(--text);
+  --bs-list-group-action-hover-bg: var(--accent);
+  --bs-list-group-action-hover-color: var(--text);
+  --bs-list-group-active-bg: var(--primary);
+  --bs-list-group-active-border-color: var(--primary);
+  --bs-list-group-active-color: var(--bg);
+}
+
+.result-thumb {
+  flex-shrink: 0;
+  width: 40px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 3px;
+}
