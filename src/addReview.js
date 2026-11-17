@@ -9,6 +9,7 @@ import {
   serverTimestamp,
   setDoc,
 } from "firebase/firestore";
+import { initializeBackLink } from "./backLink.js";
 
 const form = document.getElementById("reviewForm");
 const fields = document.getElementById("reviewFields");
@@ -68,6 +69,7 @@ onAuthReady(async (user) => {
     backLink.href = `./book_info.html?bookid=${encodeURIComponent(paramBookId)}`;
     backLink.setAttribute("aria-label", "Back to book details");
   }
+  initializeBackLink(backLink);
 
   try {
     const snapshot = await getDocs(collection(db, "books"));

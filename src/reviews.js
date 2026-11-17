@@ -2,6 +2,7 @@ import { db } from "./firebaseConfig.js";
 import { onAuthReady } from "./authentication.js";
 import { collection, collectionGroup, doc, getDoc, getDocs } from "firebase/firestore";
 import { createCover, renderStars, formatDate } from "./reviewUtils.js";
+import { initializeBackLink } from "./backLink.js";
 
 // reviews.html = every review, reviews.html?mine=1 = only my reviews
 const params = new URLSearchParams(window.location.search);
@@ -34,13 +35,7 @@ backLink.href = mineOnly
     : bookFilter
       ? `./book_info.html?bookid=${encodeURIComponent(bookFilter)}`
       : "./library.html";
-
-backLink.addEventListener("click", (e) => {
-  if (document.referrer && new URL(document.referrer).origin === window.location.origin) {
-    e.preventDefault();
-    history.back();
-  }
-});
+initializeBackLink(backLink);
 
 if (bookFilter && addReviewBtn) {
   addReviewBtn.href = `./add_review.html?bookid=${encodeURIComponent(bookFilter)}${paramTitle ? `&title=${encodeURIComponent(paramTitle)}` : ""}`;

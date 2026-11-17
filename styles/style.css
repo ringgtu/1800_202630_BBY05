@@ -539,8 +539,15 @@ div.modal {
 /* back arrow (use class="back-link" on any back link) */
 .back-link {
   color: var(--primary);
+  text-decoration: none;
 }
 
 .back-link:hover {
   color: var(--secondary);
+}
+
+.back-link:focus-visible {
+  border-radius: 0.25rem;
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
 }

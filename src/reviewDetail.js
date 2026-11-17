@@ -10,6 +10,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { createCover, renderStars, formatDate } from "./reviewUtils.js";
+import { initializeBackLink } from "./backLink.js";
 
 const message = document.getElementById("detailMessage");
 const article = document.getElementById("detailReview");
@@ -172,13 +173,12 @@ onAuthReady(async (user) => {
   bookId = params.get("book");
   reviewId = params.get("id");
 
-  if (bookId) {
-    const backLink = document.querySelector('a[aria-label="Back to reviews"]');
-    if (backLink) {
-      backLink.href = `./book_info.html?bookid=${encodeURIComponent(bookId)}`;
-      backLink.setAttribute("aria-label", "Back to book details");
-    }
+  const backLink = document.querySelector('a[aria-label="Back to reviews"]');
+  if (backLink && bookId) {
+    backLink.href = `./book_info.html?bookid=${encodeURIComponent(bookId)}`;
+    backLink.setAttribute("aria-label", "Back to book details");
   }
+  initializeBackLink(backLink);
 
   if (!bookId || !reviewId) {
     message.textContent = "No review selected.";

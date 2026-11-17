@@ -2,6 +2,7 @@ import { doc, setDoc, arrayRemove, serverTimestamp } from "firebase/firestore";
 import { db } from "./firebaseConfig.js";
 import { getBookById, getTags } from "./master.js";
 import { getCurrentUser, getFavorites, getUserData } from "./favorites.js";
+import { initializeBackLink } from "./backLink.js";
 
 const results = document.getElementById("results");
 const heading = document.getElementById("results-heading");
@@ -11,6 +12,7 @@ const backLink = document.getElementById("back-link");
 
 const listId = new URLSearchParams(window.location.search).get("list");
 if (listId) backLink.href = "lists.html"; 
+initializeBackLink(backLink);
 
 const emptyText = listId 
   ? "This list is empty."

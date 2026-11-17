@@ -1,15 +1,17 @@
-// This helper function is for checking what page is the user from to book info,
-// and bring them back to the original page
-const backLink = document.getElementById("back-link");
+export function initializeBackLink(backLink) {
+  if (!backLink || !document.referrer) return;
 
-backLink.addEventListener("click", (event) => {
-  // Check what page is the user from
-  const cameFromThisSite =
-    document.referrer && new URL(document.referrer).origin === window.location.origin;
-
-  if (cameFromThisSite) {
-    event.preventDefault(); 
-    history.back();         // go back to the page the user came from
+  let referrer;
+  try {
+    referrer = new URL(document.referrer);
+  } catch {
+    return;
   }
-  // otherwise the link works normally and goes to search.html
-});
+
+  const currentPage = new URL(window.location.href);
+  if (referrer.origin !== currentPage.origin || referrer.href === currentPage.href) return;
+
+  backLink.href = referrer.href;
+}
+
+document.querySelectorAll("[data-back-link]").forEach(initializeBackLink);
