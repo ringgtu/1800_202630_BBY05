@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>My Lists</title>
+
+    <script type="module" src="/src/main.js"></script>
+    <script type="module" src="/src/backLink.js"></script>
+    <script type="module" src="/src/lists.js"></script>
+  </head>
+
+  <body>
+    <main class="container py-4" style="max-width: 640px">
+
+      <a href="profile.html" id="back-link" class="text-reset text-decoration-none" aria-label="Back">
+        <i class="bi bi-arrow-left fs-3"></i>
+      </a>
+
+      <div class="d-flex justify-content-between align-items-center mt-3 mb-3">
+        <h1 class="h3 mb-0">Lists</h1>
+        <button id="newListButton" type="button" class="btn btn-secondary rounded-pill">
+          <i class="bi bi-plus-lg"></i> New list
+        </button>
+      </div>
+
+      <form id="newListForm" class="input-group mb-3" hidden>
+        <input
+          type="text"
+          id="newListName"
+          class="form-control"
+          placeholder="List name"
+          aria-label="List name"
+          maxlength="50"
+          required />
+        <button id="createList" type="submit" class="btn btn-secondary">Create</button>
+      </form>
+
+      <p id="listsMessage" class="text-secondary" role="status" aria-live="polite">Loading...</p>
+
+      <div id="lists" class="d-flex flex-column gap-3"></div>
+
+      <!-- List card template -->
+      <template id="list-card-template">
+        <div class="bg-secondary text-white rounded-4 p-3 d-flex justify-content-between align-items-center gap-3 position-relative">
+          <div style="min-width: 0">
+            <h2 class="h5 mb-2 text-break">
+              <a href="#" class="list-name text-white text-decoration-none stretched-link"></a>
+            </h2>
+            <p class="list-updated small mb-1"></p>
+            <p class="list-count small mb-0"></p>
+          </div>
+
+          <!--  4 cells of book cover -->
+          <div class="list-covers d-grid flex-shrink-0 overflow-hidden rounded-2" style="grid-template-columns: 1fr 1fr; width: 88px; height: 112px"></div>
+        </div>
+      </template>
+    </main>
+
+    <site-navbar></site-navbar>
+  </body>
+</html>

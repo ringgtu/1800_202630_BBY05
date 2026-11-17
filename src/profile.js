@@ -1,8 +1,8 @@
 import { auth, db } from "./firebaseConfig.js";
 import { onAuthReady } from "./authentication.js";
 import { updateProfile } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { getBookById } from "./master.js";
+import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { getBookById, getCoverLinks } from "./master.js";
 
 const form = document.getElementById("profileForm");
 const fields = document.getElementById("profileFields");

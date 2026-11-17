@@ -72,3 +72,14 @@ export async function getBookById(bookId) {
 
   return response.json();
 }
+
+// This function is for the cover of list. Cover links of the first few books, null where a book has no cover
+export async function getCoverLinks(bookIds, max = 4) {
+  const responses = await Promise.allSettled(bookIds.slice(0, max).map(getBookById));
+
+  return responses.map((response) =>
+    response.status === "fulfilled"
+      ? response.value.volumeInfo.imageLinks?.thumbnail?.replace("http://", "https://") ?? null
+      : null
+  );
+}
