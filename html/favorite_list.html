@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>My Favorites</title>
+
+    <script type="module" src="/src/main.js"></script>
+    <script type="module" src="/src/favoritesList.js"></script>
+  </head>
+
+  <body>
+    <main class="container py-4">
+      <!-- Back to the profile -->
+      <a href="profile.html" class="text-reset text-decoration-none" aria-label="Back to profile">
+        <i class="bi bi-caret-left fs-1"></i>
+      </a>
+
+      <h1 class="h3 mt-3">My Favorites</h1>
+      <h2 class="h5 mb-4" id="results-heading">Loading...</h2>
+
+      <!-- favoritesPage.js fills this with the saved books -->
+      <div class="row row-cols-1 row-cols-lg-2 g-4" id="results"></div>
+
+      <!-- Book card template -->
+      <template id="book-card-template">
+        <div class="col">
+          <div class="card border-0 mb-4">
+            <div class="row g-3">
+              <div class="col-4 col-md-3">
+                <img src="/images/book.jpg" class="img-fluid rounded book-cover" alt="Book cover" />
+              </div>
+
+              <div class="col-8 col-md-9">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div class="d-flex flex-wrap align-items-center gap-2 book-tags">
+                    <h3 class="h5 mb-0 me-2">
+                      <a href="book_info.html" class="book-title text-body text-decoration-none stretched-link">Book</a>
+                    </h3>
+                  </div>
+                  <button
+                    class="btn btn-link text-body p-0 fs-4 position-relative z-2 fav-btn"
+                    type="button"
+                    aria-label="Favorite">
+                    <i class="bi bi-heart"></i>
+                  </button>
+                </div>
+
+                <p class="mt-2 mb-0 book-desc"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </main>
+
+    <site-navbar></site-navbar>
+  </body>
+</html>

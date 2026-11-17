@@ -9,7 +9,7 @@
     <script type="module" src="/src/bookapi.js"></script>
   </head>
   <body class="position-relative m-5">
-    <a href="#" class="text-reset text-decoration-none">
+    <a href="/html/search.html" class="text-reset text-decoration-none">
       <i class="bi bi-caret-left fs-1"></i>
     </a>
     <br />
@@ -17,7 +17,7 @@
     <!-- Book cover -->
     <div class="d-flex justify-content-center align-items-center">
       <figure class="figure text-center">
-        <img id="cover" src="/images/image.png" class="figure-img img-fluid rounded" alt="..." />
+        <img id="cover" src="/images/image.png" class="figure-img img-fluid rounded" alt="book cover" style="width: 240px; aspect-ratio: 2 / 3; object-fit: cover" /> 
         <figcaption class="figure-caption">
           <div class="fw-bold text-dark fs-1" id="title">Book</div>
           <div class="text-muted fs-4" id="author">By Author</div>
@@ -43,29 +43,24 @@
     <hr />
     <div class="d-flex justify-content-around">
       <button type="button" class="btn btn-secondary" id="test">Add to list</button>
-      <button type="button" class="btn btn-secondary">Where to buy</button>
+      <button type="button" class="btn btn-secondary" id="whereToBuyBtn">Where to buy</button>
     </div>
     <hr />
-    <!-- Detiels -->
+    <!-- Details -->
     <div class="list-group">
-      <a href="#" class="list-group-item list-group-item-action">
-        <div class="d-flex w-100 justify-content-between">
-          <h5 class="mb-1">Summary</h5>
-        </div>
-        <div class="mb-1" id="summary">
+      <div class="list-group-item p-3">
+        <h5 class="mb-2">Summary</h5>
+        <div class="mb-1 text-secondary" id="summary">
           Lorem ipsum dolor sit amet consectetur. Viverra facilisi sagittis etiam facilisi tristique vitae a rutrum
           porta...
         </div>
-      </a>
-      <a href="#" class="list-group-item list-group-item-action">
-        <div class="d-flex w-100 justify-content-between">
-          <h5 class="mb-1">About Author</h5>
+      </div>
+      <div id="whereToBuySection" class="list-group-item p-3">
+        <h5 class="mb-3">Where to buy</h5>
+        <div id="retailerList" class="d-flex flex-column gap-2">
+          <p class="text-muted small mb-0">Loading retailer options…</p>
         </div>
-        <p class="mb-1">
-          Lorem ipsum dolor sit amet consectetur. Viverra facilisi sagittis etiam facilisi tristique vitae a rutrum
-          porta...
-        </p>
-      </a>
+      </div>
     </div>
   </body>
 </html>

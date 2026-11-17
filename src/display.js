@@ -1,7 +1,10 @@
 // This code is for display the book from the API. To achieve the goal, the first 
 // book card placeholder will be selected as a reference and renderBook() will gather
 // the info and replace it. After the user do the action, 
+import { doc, setDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { db } from "./firebaseConfig.js"; 
 import { searchBooks, sortBooks } from "./master.js";
+import { getCurrentUser, getFavorites } from "./favorites.js";
 
 const params = new URLSearchParams(window.location.search);
 
@@ -12,8 +15,8 @@ const q = params.get("q") ?? "";
 const sort = params.get("sort") ?? "";
 
 // Filter
-const genres = params.getAll("genre");   
-const tags = params.getAll("tag");       
+const genres = [...new Set(params.getAll("genre"))]; 
+const tags = [...new Set(params.getAll("tag"))]; 
 
 // After action
 const results = document.getElementById("results");
@@ -21,7 +24,16 @@ const heading = document.getElementById("results-heading");
 const searchInput = document.getElementById("search-input");
 
 // Keep a copy of placeholder card to use as a pattern
-const cardPattern = results.firstElementChild.cloneNode(true);
+const template = document.getElementById("book-card-template");
+
+// Sort label for displaying
+const sortLabels = {
+  az: "Alphabet (A-Z)",
+  za: "Alphabet (Z-A)",
+  new: "Release Date (Newest)",
+  old: "Release Date (Oldest)",
+  pop: "Most Popular",
+};
 
 // Put the current keyword back in the search box
 searchInput.value = q;
@@ -32,15 +44,76 @@ document.querySelectorAll("[data-keep-params]").forEach((link) => {
   link.href = `${page}?${params}`;
 });
 
+let currentUser = null;
+let favorites = [];
+try {
+  currentUser = await getCurrentUser();
+  favorites = currentUser ? await getFavorites(currentUser.uid) : [];
+} catch (error) {
+  console.error("Error loading favorites:", error);
+}
+
 // Strip description to plain text
 function stripHtml(html) {
   return new DOMParser().parseFromString(html, "text/html").body.textContent;
 }
 
+// ---------- Heart (favorite) ----------
+function fillHeart(heart) {
+  heart.classList.replace("bi-heart", "bi-heart-fill");
+}
+
+function emptyHeart(heart) {
+  heart.classList.replace("bi-heart-fill", "bi-heart");
+}
+
+function setupHeart(card, bookID) {
+  const button = card.querySelector(".fav-btn"); 
+  const heart = button.querySelector("i");      
+
+  if (favorites.includes(bookID)) {
+    fillHeart(heart);
+  }
+
+  button.addEventListener("click", function () {
+    toggleFavorite(heart, bookID);
+  });
+}
+async function toggleFavorite(heart, bookID) {
+  if (!currentUser) {
+    alert("Please log in to save favorites.");
+    return;
+  }
+
+  const wasFilled = heart.classList.contains("bi-heart-fill");
+
+  if (wasFilled) {
+    emptyHeart(heart);
+  } else {
+    fillHeart(heart);
+  }
+
+  try {
+    const userRef = doc(db, "users", currentUser.uid);
+    await setDoc(
+      userRef,
+      { favorites: wasFilled ? arrayRemove(bookID) : arrayUnion(bookID) },
+      { merge: true }
+    );
+  } catch (error) {
+    console.error("Error saving favorite:", error);
+
+    if (wasFilled) {
+      fillHeart(heart);
+    } else {
+      emptyHeart(heart);
+    }
+  }
+}
 
 function renderBook(book) {
-    const info = book.volumeInfo;
-    const card = cardPattern.cloneNode(true);
+  const info = book.volumeInfo;
+  const card = template.content.firstElementChild.cloneNode(true);
 
     // Title & link 
     const title = card.querySelector(".book-title");
@@ -68,6 +141,8 @@ function renderBook(book) {
         tagBox.append(badge);
     });
 
+    setupHeart(card, book.id);
+
     return card;
 }
 
@@ -83,6 +158,15 @@ function shuffle(list) {
   return copy;
 }
 
+// Display sort option
+function buildHeading(count) {
+  const picked = [...genres, ...tags];
+  const byText = picked.length ? ` by ${picked.join(", ")}` : "";
+  const sortText = sortLabels[sort] ? `, sort by ${sortLabels[sort]}` : "";
+  const word = count === 1 ? "Result" : "Results";
+
+  return `Found ${count} ${word}${byText}${sortText}:`;
+}
 
 try {
   const books = sortBooks(await searchBooks({ q, genres, tags }), sort);
@@ -91,7 +175,7 @@ try {
   if (isSearching) {
     // After Action
     heading.textContent = books.length
-      ? `Found ${books.length} Results:`
+      ? buildHeading(books.length)         
       : "No books found. Try fewer filters.";
     results.replaceChildren(...books.map(renderBook));
   } else {

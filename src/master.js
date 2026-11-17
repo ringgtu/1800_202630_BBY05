@@ -60,3 +60,15 @@ export function sortBooks(books, sort) {
       return copy; // no sort chosen: keep Google's order
   }
 }
+
+export async function getBookById(bookId) {
+  const response = await fetch(`${API_URL}/${bookId}?key=${API_KEY}`, {
+    method: "GET",
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+}
