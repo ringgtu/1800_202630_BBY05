@@ -151,7 +151,9 @@ deleteButton.addEventListener("click", async () => {
       console.error("Review deleted, but could not update myreview:", error);
     }
 
-    window.location.href = "./reviews.html";
+    window.location.href = bookId
+      ? `./book_info.html?bookid=${encodeURIComponent(bookId)}`
+      : "./reviews.html";
   } catch (error) {
     console.error("Could not delete review:", error);
     showAction("Could not delete your review. Please try again.", "danger");
@@ -169,6 +171,15 @@ onAuthReady(async (user) => {
   const params = new URLSearchParams(window.location.search);
   bookId = params.get("book");
   reviewId = params.get("id");
+
+  if (bookId) {
+    const backLink = document.querySelector('a[aria-label="Back to reviews"]');
+    if (backLink) {
+      backLink.href = `./book_info.html?bookid=${encodeURIComponent(bookId)}`;
+      backLink.setAttribute("aria-label", "Back to book details");
+    }
+  }
+
   if (!bookId || !reviewId) {
     message.textContent = "No review selected.";
     return;

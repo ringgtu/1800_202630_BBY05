@@ -496,6 +496,17 @@ div.modal {
   --bs-list-group-active-color: var(--bg);
 }
 
+#reviewSummaryBar .list-group-item {
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out;
+}
+
+#reviewSummaryBar .list-group-item:hover,
+#reviewSummaryBar .list-group-item:focus-visible {
+  background-color: var(--accent);
+  outline: none;
+}
+
 .result-thumb {
   flex-shrink: 0;
   width: 40px;

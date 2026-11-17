@@ -59,6 +59,16 @@ onAuthReady(async (user) => {
     return;
   }
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramBookId = urlParams.get("bookid") || urlParams.get("book");
+  const paramTitle = urlParams.get("title");
+
+  const backLink = document.querySelector('a[aria-label="Back to reviews"]');
+  if (backLink && paramBookId) {
+    backLink.href = `./book_info.html?bookid=${encodeURIComponent(paramBookId)}`;
+    backLink.setAttribute("aria-label", "Back to book details");
+  }
+
   try {
     const snapshot = await getDocs(collection(db, "books"));
     const books = snapshot.docs
@@ -67,15 +77,51 @@ onAuthReady(async (user) => {
 
     books.forEach((book) => {
       bookNames[book.id] = book.name;
-      const option = document.createElement("option");
-      option.value = book.id;
-      option.textContent = book.name;
-      bookSelect.append(option);
     });
+
+    if (paramBookId && !bookNames[paramBookId]) {
+      let title = paramTitle;
+      if (!title) {
+        try {
+          const res = await fetch(
+            `https://www.googleapis.com/books/v1/volumes/${paramBookId}?key=${import.meta.env.VITE_GOOGLE_BOOKS_API_KEY}`
+          );
+          if (res.ok) {
+            const data = await res.json();
+            title = data.volumeInfo?.title;
+          }
+        } catch (e) {
+          console.warn("Could not fetch title from Google Books:", e);
+        }
+      }
+      bookNames[paramBookId] = title || "Selected Book";
+    }
+
+    bookSelect.replaceChildren();
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "Choose a book…";
+    bookSelect.append(defaultOption);
+
+    Object.keys(bookNames)
+      .sort((a, b) => bookNames[a].localeCompare(bookNames[b]))
+      .forEach((id) => {
+        const option = document.createElement("option");
+        option.value = id;
+        option.textContent = bookNames[id];
+        if (paramBookId && id === paramBookId) {
+          option.selected = true;
+        }
+        bookSelect.append(option);
+      });
+
+    if (paramBookId) {
+      bookSelect.value = paramBookId;
+    }
 
     ready = true;
     fields.disabled = false;
-    showMessage(books.length ? "" : "No books found to review yet.");
+    showMessage(Object.keys(bookNames).length ? "" : "No books found to review yet.");
   } catch (error) {
     console.error("Could not load books:", error);
     showMessage("Could not load the books. Refresh the page to try again.", "danger");
@@ -122,7 +168,20 @@ form.addEventListener("submit", async (event) => {
       console.error("Review saved, but could not update myreview:", error);
     }
 
-    window.location.href = "./reviews.html";
+    // 3. Ensure books/{bookId} has the title for future reviews
+    try {
+      await setDoc(doc(db, "books", bookId), { name: bookNames[bookId] || "Book" }, { merge: true });
+    } catch (error) {
+      console.error("Could not update books document:", error);
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramBookId = urlParams.get("bookid") || urlParams.get("book");
+    if (paramBookId) {
+      window.location.href = `./book_info.html?bookid=${encodeURIComponent(bookId)}`;
+    } else {
+      window.location.href = "./reviews.html";
+    }
   } catch (error) {
     console.error("Could not save review:", error);
     showMessage("Could not save your review. Please try again.", "danger");
