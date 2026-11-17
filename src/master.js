@@ -1,5 +1,8 @@
+// This is the master code for API connection
+
 const API_URL = "https://www.googleapis.com/books/v1/volumes";
 const API_KEY = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY;
+
 
 // Search, record the tags & param for filter as well
 export async function searchBooks({ q = "", genres = [], tags = [] } = {}) {
@@ -61,6 +64,8 @@ export function sortBooks(books, sort) {
   }
 }
 
+
+// Get book ID from googlebooksAPI
 export async function getBookById(bookId) {
   const response = await fetch(`${API_URL}/${bookId}?key=${API_KEY}`, {
     method: "GET",
@@ -71,4 +76,25 @@ export async function getBookById(bookId) {
   }
 
   return response.json();
+}
+
+
+// Sometimes the tags from googlebooksAPI can be very long like "Fiction / Mystery"
+// Spliting the tags to make genre filter work properly
+export function getTags(book, picked = [], max = 3) {
+  const categories = (book.volumeInfo.categories ?? [])
+    .flatMap((category) => category.split("/")) // "Fiction / Mystery" -> "Fiction ", "Mystery"
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+
+  const seen = new Set();
+
+  return [...picked, ...categories]
+    .filter((tag) => {
+      const key = tag.toLowerCase(); // avoid overlap
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, max);
 }

@@ -1,50 +1,66 @@
-import { doc, setDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { doc, setDoc, arrayRemove } from "firebase/firestore";
 import { db } from "./firebaseConfig.js";
-import { getBookById } from "./master.js";
+import { getBookById, getTags } from "./master.js";
 import { getCurrentUser, getFavorites } from "./favorites.js";
 
 const results = document.getElementById("results");
 const heading = document.getElementById("results-heading");
 const template = document.getElementById("book-card-template");
 
+let unfavCount = 0;
+
+
 // ---------- Helpers ----------
 function stripHtml(html) {
   return new DOMParser().parseFromString(html, "text/html").body.textContent;
 }
 
+
 function fillHeart(heart) {
   heart.classList.replace("bi-heart", "bi-heart-fill");
 }
+
 
 function emptyHeart(heart) {
   heart.classList.replace("bi-heart-fill", "bi-heart");
 }
 
-async function toggleFavorite(heart, bookID, user) {
-  const wasFilled = heart.classList.contains("bi-heart-fill");
 
-  if (wasFilled) {
-    emptyHeart(heart);
-  } else {
-    fillHeart(heart);
+function updateHeading() {
+  const count = [...results.children].filter((card) => !card.hidden).length;
+
+  if (count === 0) {
+    heading.textContent = failedCount
+      ? "Could not load your favorites."
+      : "No favorites yet. Tap the heart on a book to save it here.";
+    return;
   }
+
+  heading.textContent =
+    `${count} ${count === 1 ? "book" : "books"} saved` +
+    (unfavCount ? ` (${unfavCount} could not be loaded)` : "") +
+    ":";
+}
+
+
+async function removeFavorite(card, bookID, user) {
+  card.hidden = true;
+  updateHeading();
 
   try {
     await setDoc(
       doc(db, "users", user.uid),
-      { favorites: wasFilled ? arrayRemove(bookID) : arrayUnion(bookID) },
+      { favorites: arrayRemove(bookID) },
       { merge: true }
     );
   } catch (error) {
-    console.error("Error saving favorite:", error);
-    // The save failed, so put the icon back
-    if (wasFilled) {
-      fillHeart(heart);
-    } else {
-      emptyHeart(heart);
-    }
+    console.error("Error removing favorite:", error);
+    // The save failed, so bring the card back
+    card.hidden = false;
+    updateHeading();
   }
 }
+
 
 function renderBook(book, user) {
     const info = book.volumeInfo;
@@ -68,18 +84,18 @@ function renderBook(book, user) {
 
     // Tag
     const tagBox = card.querySelector(".book-tags");
-    (info.categories ?? []).slice(0, 3).forEach((category) => {
+    getTags(book).forEach((tag) => { 
     const badge = document.createElement("span");
     badge.className = "badge rounded-pill bg-secondary-subtle text-body fw-normal fs-6 px-3 py-2";
-    badge.textContent = category;
+    badge.textContent = tag; 
     tagBox.append(badge);
-    });
+  });
 
     // Fav icon
     const button = card.querySelector(".fav-btn").closest("button");
     const heart = button.querySelector("i");
     fillHeart(heart);
-    button.addEventListener("click", () => toggleFavorite(heart, book.id, user));
+    button.addEventListener("click", () => removeFavorite(card, book.id, user));
 
     return card;
 }
@@ -100,19 +116,15 @@ async function showFavorites() {
       return;
     }
 
-    // Newest favorite first, all requests at the same time
     const responses = await Promise.allSettled([...bookIds].reverse().map(getBookById));
     const books = responses
       .filter((response) => response.status === "fulfilled")
       .map((response) => response.value);
 
-    const failed = responses.length - books.length;
-    heading.textContent =
-      `${books.length} ${books.length === 1 ? "book" : "books"} saved` +
-      (failed ? ` (${failed} could not be loaded)` : "") +
-      ":";
+    unfavCount = responses.length - books.length;
 
     results.replaceChildren(...books.map((book) => renderBook(book, user)));
+    updateHeading()
   } catch (error) {
     console.error("Error loading favorites:", error);
     heading.textContent = "Something went wrong. Please try again.";
