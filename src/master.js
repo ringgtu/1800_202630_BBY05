@@ -3,6 +3,51 @@
 const API_URL = "https://www.googleapis.com/books/v1/volumes";
 const API_KEY = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY;
 
+// ---------- Remember books so Google isn't asked twice ----------
+const CACHE_KEY = "bookCache";
+const CACHE_HOURS = 24;
+const pending = new Map(); 
+
+function readCache() {
+  try {
+    return JSON.parse(localStorage.getItem(CACHE_KEY)) ?? {};
+  } catch {
+    return {};
+  }
+}
+
+// Keep only what the cards need, so the browser storage stays small
+function saveToCache(book) {
+  try {
+    const cache = readCache();
+    const maxAge = CACHE_HOURS * 60 * 60 * 1000;
+
+    // Drop books saved more than 24 hours ago
+    for (const id in cache) {
+      if (Date.now() - cache[id].savedAt > maxAge) delete cache[id];
+    }
+
+    const info = book.volumeInfo ?? {};
+    cache[book.id] = {
+      savedAt: Date.now(),
+      book: {
+        id: book.id,
+        volumeInfo: {
+          title: info.title,
+          authors: info.authors,
+          categories: info.categories,
+          publishedDate: info.publishedDate,
+          description: info.description?.slice(0, 600),
+          imageLinks: { thumbnail: info.imageLinks?.thumbnail },
+        },
+      },
+    };
+
+    localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // Storage is full or blocked: just skip caching
+  }
+}
 
 // Search, record the tags & param for filter as well
 export async function searchBooks({ q = "", genres = [], tags = [] } = {}) {
@@ -39,7 +84,6 @@ export async function searchBooks({ q = "", genres = [], tags = [] } = {}) {
   }
 }
 
-
 // Sort
 export function sortBooks(books, sort) {
   const title = (book) => book.volumeInfo.title ?? "";
@@ -65,17 +109,41 @@ export function sortBooks(books, sort) {
 }
 
 
-// Get book ID from googlebooksAPI
+// Get a book by its id (from the browser's memory if we have it, otherwise Google)
 export async function getBookById(bookId) {
-  const response = await fetch(`${API_URL}/${bookId}?key=${API_KEY}`, {
-    method: "GET",
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+  const saved = readCache()[bookId];
+  if (saved && Date.now() - saved.savedAt < CACHE_HOURS * 60 * 60 * 1000) {
+    return saved.book;
   }
 
-  return response.json();
+  // Same book already being fetched right now? Wait for that one.
+  if (pending.has(bookId)) return pending.get(bookId);
+
+  const request = fetch(`${API_URL}/${bookId}?key=${API_KEY}`, { method: "GET" })
+    .then(async (response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const book = await response.json();
+      saveToCache(book);
+      return book;
+    })
+    .finally(() => pending.delete(bookId));
+
+  pending.set(bookId, request);
+  return request;
+}
+
+
+// This function is for the cover of list. Cover links of the first few books, null where a book has no cover
+export async function getCoverLinks(bookIds, max = 4) {
+  const responses = await Promise.allSettled(bookIds.slice(0, max).map(getBookById));
+
+  return responses.map((response) =>
+    response.status === "fulfilled"
+      ? response.value.volumeInfo.imageLinks?.thumbnail?.replace("http://", "https://") ?? null
+      : null
+  );
 }
 
 

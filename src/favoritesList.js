@@ -1,11 +1,23 @@
-import { doc, setDoc, arrayRemove } from "firebase/firestore";
+import { doc, setDoc, arrayRemove, serverTimestamp } from "firebase/firestore";
 import { db } from "./firebaseConfig.js";
 import { getBookById, getTags } from "./master.js";
-import { getCurrentUser, getFavorites } from "./favorites.js";
+import { getCurrentUser, getFavorites, getUserData } from "./favorites.js";
 
 const results = document.getElementById("results");
 const heading = document.getElementById("results-heading");
 const template = document.getElementById("book-card-template");
+const pageTitle = document.getElementById("page-title");
+const backLink = document.getElementById("back-link"); 
+
+const listId = new URLSearchParams(window.location.search).get("list");
+if (listId) backLink.href = "lists.html"; 
+
+const emptyText = listId 
+  ? "This list is empty."
+  : "No favorites yet. Tap the heart on a book to save it here.";
+
+let failedCount = 0;
+
 
 let unfavCount = 0;
 
@@ -30,32 +42,35 @@ function updateHeading() {
   const count = [...results.children].filter((card) => !card.hidden).length;
 
   if (count === 0) {
-    heading.textContent = failedCount
-      ? "Could not load your favorites."
-      : "No favorites yet. Tap the heart on a book to save it here.";
+    heading.textContent = failedCount ? "Could not load your books." : emptyText;
     return;
   }
 
-  heading.textContent =
-    `${count} ${count === 1 ? "book" : "books"} saved` +
-    (unfavCount ? ` (${unfavCount} could not be loaded)` : "") +
+   heading.textContent =
+    `${count} ${count === 1 ? "book" : "books"} ${listId ? "in this list" : "saved"}` +
+    (failedCount ? ` (${failedCount} could not be loaded)` : "") +
     ":";
 }
 
 
-async function removeFavorite(card, bookID, user) {
+async function removeFromList(card, bookID, user) {
   card.hidden = true;
   updateHeading();
 
   try {
-    await setDoc(
-      doc(db, "users", user.uid),
-      { favorites: arrayRemove(bookID) },
-      { merge: true }
-    );
+    const userRef = doc(db, "users", user.uid);
+
+    if (listId) {
+      await setDoc(
+        userRef,
+        { myList: { [listId]: { books: arrayRemove(bookID), updatedAt: serverTimestamp() } } }, 
+        { merge: true }
+      );
+    } else {
+      await setDoc(userRef, { favorites: arrayRemove(bookID) }, { merge: true });
+    }
   } catch (error) {
-    console.error("Error removing favorite:", error);
-    // The save failed, so bring the card back
+    console.error("Error removing book:", error);
     card.hidden = false;
     updateHeading();
   }
@@ -94,13 +109,21 @@ function renderBook(book, user) {
     // Fav icon
     const button = card.querySelector(".fav-btn").closest("button");
     const heart = button.querySelector("i");
-    fillHeart(heart);
-    button.addEventListener("click", () => removeFavorite(card, book.id, user));
+
+    if (listId) { // in a list the button removes the book from the list
+    heart.className = "bi bi-x-lg";
+    button.setAttribute("aria-label", "Remove from list");
+    button.title = "Remove from list";
+  } else {
+    fillHeart(heart); // in Favorites every book starts as a filled heart
+  }
+
+    button.addEventListener("click", () => removeFromList(card, book.id, user));
 
     return card;
 }
 
-async function showFavorites() {
+async function showBooks() { 
   try {
     const user = await getCurrentUser();
 
@@ -109,10 +132,27 @@ async function showFavorites() {
       return;
     }
 
-    const bookIds = await getFavorites(user.uid);
+    let bookIds;
+
+    if (listId) {
+      const data = await getUserData(user.uid);
+      const list = data.myList?.[listId]; 
+
+      if (!list) {
+        pageTitle.textContent = "List not found";
+        heading.textContent = "This list doesn't exist.";
+        return;
+      }
+
+      pageTitle.textContent = list.name;
+      document.title = list.name;
+      bookIds = list.books ?? [];
+    } else {
+      bookIds = await getFavorites(user.uid);
+    }
 
     if (bookIds.length === 0) {
-      heading.textContent = "No favorites yet. Tap the heart on a book to save it here.";
+      heading.textContent = emptyText; 
       return;
     }
 
@@ -121,14 +161,13 @@ async function showFavorites() {
       .filter((response) => response.status === "fulfilled")
       .map((response) => response.value);
 
-    unfavCount = responses.length - books.length;
-
+    failedCount = responses.length - books.length;
     results.replaceChildren(...books.map((book) => renderBook(book, user)));
-    updateHeading()
+    updateHeading();
   } catch (error) {
-    console.error("Error loading favorites:", error);
+    console.error("Error loading books:", error);
     heading.textContent = "Something went wrong. Please try again.";
   }
 }
 
-showFavorites();
+showBooks(); 

@@ -2,7 +2,8 @@ import { auth, db } from "./firebaseConfig.js";
 import { onAuthReady } from "./authentication.js";
 import { updateProfile } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { getBookById } from "./master.js";
+import { getBookById, getCoverLinks } from "./master.js";
+import { sortLists } from "./favorites.js";
 
 const form = document.getElementById("profileForm");
 const fields = document.getElementById("profileFields");
@@ -16,6 +17,9 @@ const message = document.getElementById("profileMessage");
 const favoritesList = document.getElementById("favoritesList");
 const favoritesMessage = document.getElementById("favoritesMessage");
 const favoriteTemplate = document.getElementById("favorite-card-template");
+const listsPreview = document.getElementById("listsPreview");
+const listsMessage = document.getElementById("listsMessage");
+const listTemplate = document.getElementById("list-preview-template");
 
 // View / navigation elements
 const profileCard = document.getElementById("profileCard");
@@ -32,6 +36,7 @@ const cancelButton = document.getElementById("cancelEdit");
 const backButton = document.getElementById("backToProfile");
 
 const MAX_SHOWN_FAVORITES = 9;
+const MAX_SHOWN_LISTS = 9;
 
 let loadedUserId = null;
 let saving = false;
@@ -134,6 +139,8 @@ onAuthReady(async (user) => {
   emailDisplay.textContent = "";
   favoritesList.replaceChildren();
   favoritesMessage.textContent = "";
+  listsPreview.replaceChildren();     
+  listsMessage.textContent = "";     
 
   if (!user) {
     window.location.replace("/html/login.html");
@@ -169,6 +176,7 @@ onAuthReady(async (user) => {
     );
 
     showFavorites(profile.favorites ?? [], user.uid);
+    showListPreviews(profile.myList ?? {}, user.uid);
     
   } catch (error) {
     if (auth.currentUser?.uid !== user.uid) return;
@@ -309,5 +317,67 @@ async function showFavorites(bookIds, userId) {
   } catch (error) {
     console.error("Could not show favorites:", error);
     favoritesMessage.textContent = "Could not load your favorites.";
+  }
+}
+
+
+// Build one list card
+function renderListPreview(list, covers) {
+  const count = list.books?.length ?? 0;
+  const card = listTemplate.content.firstElementChild.cloneNode(true);
+
+  const link = card.querySelector(".list-name");
+  link.textContent = list.name;
+  link.title = list.name; 
+  link.href = `favorite_list.html?list=${list.id}`;
+
+  card.querySelector(".list-count").textContent = `${count} ${count === 1 ? "book" : "books"}`;
+
+  // 2x2 picture: a cover where we have one, a plain square where we don't
+  const grid = card.querySelector(".list-covers");
+  for (let i = 0; i < 4; i++) {
+    if (covers[i]) {
+      const image = document.createElement("img");
+      image.src = covers[i];
+      image.alt = "";
+      image.className = "w-100 h-100";
+      image.style.objectFit = "cover";
+      grid.append(image);
+    } else {
+      const empty = document.createElement("div");
+      empty.className = i % 3 === 0 ? "bg-light" : "bg-dark-subtle"; 
+      grid.append(empty);
+    }
+  }
+
+  return card;
+}
+
+
+// Show the user's 9 most recently updated lists
+async function showListPreviews(myList, userId) {
+  const lists = sortLists(myList).slice(0, MAX_SHOWN_LISTS);
+
+  if (lists.length === 0) {
+    listsPreview.replaceChildren();
+    listsMessage.textContent = "No lists yet. Select Lists to create one.";
+    return;
+  }
+
+  listsMessage.textContent = "Loading lists…";
+
+  try {
+    const cards = await Promise.all(
+      lists.map(async (list) => renderListPreview(list, await getCoverLinks(list.books ?? [])))
+    );
+
+    // Ignore the result if the signed-in account changed
+    if (auth.currentUser?.uid !== userId) return;
+
+    listsPreview.replaceChildren(...cards);
+    listsMessage.textContent = "";
+  } catch (error) {
+    console.error("Could not show lists:", error);
+    listsMessage.textContent = "Could not load your lists.";
   }
 }

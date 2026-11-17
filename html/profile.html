@@ -165,42 +165,27 @@
 
         <!-- Book lists -->
         <section class="bg-secondary-subtle rounded-4 p-3 mt-4">
-          <h2 class="h5 mb-3">Lists</h2>
+          <h2 class="h5 mb-3">
+            <a href="lists.html" class="link-body-emphasis link-underline-opacity-0 link-underline-opacity-100-hover d-inline-flex align-items-center gap-2">
+              Lists <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </a>
+          </h2>
+          <p id="listsMessage" class="mb-0" role="status"></p>
 
-          <div class="d-flex flex-nowrap gap-4 overflow-auto pb-2">
-            <div class="bg-secondary text-white rounded-4 p-3 text-center flex-shrink-0">
-              <div class="d-flex flex-wrap mb-2" style="width: 65px">
-                <div class="bg-light" style="width: 50%; height: 32px"></div>
-                <div class="bg-dark-subtle" style="width: 50%; height: 32px"></div>
-                <div class="bg-dark-subtle" style="width: 50%; height: 32px"></div>
-                <div class="bg-light" style="width: 50%; height: 32px"></div>
-              </div>
-              <p class="mb-0">List 1</p>
-              <small>31 books</small>
-            </div>
+          <div id="listsPreview" class="d-flex flex-nowrap gap-4 overflow-auto pb-2"></div>
 
-            <div class="bg-secondary text-white rounded-4 p-3 text-center flex-shrink-0">
-              <div class="d-flex flex-wrap mb-2" style="width: 65px">
-                <div class="bg-light" style="width: 50%; height: 32px"></div>
-                <div class="bg-dark-subtle" style="width: 50%; height: 32px"></div>
-                <div class="bg-dark-subtle" style="width: 50%; height: 32px"></div>
-                <div class="bg-light" style="width: 50%; height: 32px"></div>
-              </div>
-              <p class="mb-0">List 2</p>
-              <small>12 books</small>
-            </div>
+          <!-- Card template -->
+          <template id="list-preview-template">
+            <div class="bg-secondary text-white rounded-4 p-3 text-center flex-shrink-0 position-relative" style="width: 110px">
+              <!-- 2x2 picture: profile.js puts 4 cells in here -->
+              <div
+                class="list-covers d-grid mx-auto mb-2 overflow-hidden rounded-1"
+                style="grid-template-columns: 1fr 1fr; width: 65px; height: 85px"></div>
 
-            <div class="bg-secondary text-white rounded-4 p-3 text-center flex-shrink-0">
-              <div class="d-flex flex-wrap mb-2" style="width: 65px">
-                <div class="bg-light" style="width: 50%; height: 32px"></div>
-                <div class="bg-dark-subtle" style="width: 50%; height: 32px"></div>
-                <div class="bg-dark-subtle" style="width: 50%; height: 32px"></div>
-                <div class="bg-light" style="width: 50%; height: 32px"></div>
-              </div>
-              <p class="mb-0">List 3</p>
-              <small>8 books</small>
+              <a href="#" class="list-name stretched-link text-white text-decoration-none small d-block text-truncate"></a>
+              <small class="list-count d-block"></small>
             </div>
-          </div>
+          </template>
         </section>
 
         <a href="./reviews.html?mine=1" class="btn bg-secondary-subtle rounded-pill w-100 mt-4">My reviews</a>

@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="/styles/style.css" />
     <script type="module" src="/src/main.js"></script>
     <script type="module" src="/src/bookapi.js"></script>
+    <script type="module" src="/src/addToList.js"></script>
     <script type="module" src="/src/backLink.js"></script>
   </head>
   <body class="position-relative m-5">
@@ -43,7 +44,7 @@
     </ul>
     <hr />
     <div class="d-flex justify-content-around">
-      <button type="button" class="btn btn-secondary" id="test">Add to list</button>
+      <button type="button" class="btn btn-secondary" id="add-to-list" data-bs-toggle="modal" data-bs-target="#addToListModal">Add to list</button>
       <button type="button" class="btn btn-secondary" id="whereToBuyBtn">Where to buy</button>
     </div>
     <hr />
@@ -60,6 +61,41 @@
         <h5 class="mb-3">Where to buy</h5>
         <div id="retailerList" class="d-flex flex-column gap-2">
           <p class="text-muted small mb-0">Loading retailer options…</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add list popup -->
+    <div class="modal fade" id="addToListModal" tabindex="-1" aria-labelledby="addToListTitle" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title h5" id="addToListTitle">Add to list</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+
+          <div class="modal-body">
+            <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+              <p id="addToListMessage" class="mb-0" role="status" aria-live="polite"></p>
+              <button id="newListToggle" type="button" class="btn btn-secondary btn-sm flex-shrink-0" disabled>
+                <i class="bi bi-plus-lg"></i> New list
+              </button>
+            </div>
+
+            <form id="newListInline" class="input-group mb-2" hidden>
+              <input
+                type="text"
+                id="newListInlineName"
+                class="form-control"
+                placeholder="List name"
+                aria-label="List name"
+                maxlength="50"
+                required />
+              <button id="newListInlineCreate" type="submit" class="btn btn-secondary">Create</button>
+            </form>
+
+            <div id="addToListOptions" class="list-group"></div>
+          </div>
         </div>
       </div>
     </div>
