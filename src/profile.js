@@ -31,6 +31,8 @@ const editButton = document.getElementById("editProfile");
 const cancelButton = document.getElementById("cancelEdit");
 const backButton = document.getElementById("backToProfile");
 
+const MAX_SHOWN_FAVORITES = 9;
+
 let loadedUserId = null;
 let saving = false;
 
@@ -291,8 +293,9 @@ async function showFavorites(bookIds, userId) {
   favoritesMessage.textContent = "Loading favorites…";
 
   try {
-    // Newest favorite first, all requests at the same time
-    const results = await Promise.allSettled([...bookIds].reverse().map(getBookById));
+    // Newest favorite first, only can show up to 9 fav on profile
+    const newest = bookIds.slice(-MAX_SHOWN_FAVORITES).reverse();
+    const results = await Promise.allSettled(newest.map(getBookById));
 
     // Ignore the result if the signed-in account changed
     if (auth.currentUser?.uid !== userId) return;
