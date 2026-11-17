@@ -94,6 +94,40 @@ hr {
   --bs-btn-active-color: var(--text);
 }
 
+/* outline buttons: burgundy for primary, rust for secondary */
+.btn.btn-outline-primary {
+  --bs-btn-color: var(--primary);
+  --bs-btn-border-color: var(--primary);
+  --bs-btn-hover-bg: var(--primary);
+  --bs-btn-hover-border-color: var(--primary);
+  --bs-btn-hover-color: var(--bg);
+  --bs-btn-active-bg: var(--primary);
+  --bs-btn-active-border-color: var(--primary);
+  --bs-btn-active-color: var(--bg);
+  --bs-btn-disabled-color: var(--primary);
+  --bs-btn-disabled-border-color: var(--primary);
+}
+
+.btn.btn-outline-secondary {
+  --bs-btn-color: var(--secondary);
+  --bs-btn-border-color: var(--secondary);
+  --bs-btn-hover-bg: var(--secondary);
+  --bs-btn-hover-border-color: var(--secondary);
+  --bs-btn-hover-color: var(--bg);
+  --bs-btn-active-bg: var(--secondary);
+  --bs-btn-active-border-color: var(--secondary);
+  --bs-btn-active-color: var(--bg);
+  --bs-btn-disabled-color: var(--secondary);
+  --bs-btn-disabled-border-color: var(--secondary);
+}
+
+/* link-style buttons, such as "← Back" */
+.btn.btn-link {
+  --bs-btn-color: var(--primary);
+  --bs-btn-hover-color: var(--secondary);
+  --bs-btn-active-color: var(--secondary);
+}
+
 
 /* 4. Forms
    ========================================================================== */
@@ -241,17 +275,16 @@ main h2 {
 }
 
 
-/* 9. Library page: 3D Flip Book
+/* 9. Library page: the book
    ========================================================================== */
 .stage {
   perspective: 2200px;
   padding: 2rem 0;
 }
 
+/* sliding from one book to the next */
 .shelf {
-  transition:
-    opacity 0.35s ease,
-    transform 0.35s ease;
+  transition: opacity 0.35s ease, transform 0.35s ease;
 }
 
 .shelf.out-left {
@@ -269,32 +302,33 @@ main h2 {
   width: calc(var(--pw) * 2);
   height: var(--ph);
   margin: 0 auto;
+  transform: translateX(-25%);                /* closed: the cover sits in the middle */
   transition: transform 0.8s ease;
   touch-action: pan-y;
   user-select: none;
   -webkit-user-select: none;
   cursor: pointer;
-  transform: translateX(-25%);
 }
 
 .book.open {
   transform: translateX(0);
 }
 
+/* .leaf = the cover that swings open, .base = the page underneath it */
 .leaf,
 .base {
   position: absolute;
-  left: 50%;
   top: 0;
+  left: 50%;
   width: 50%;
   height: 100%;
 }
 
 .leaf {
-  transform-origin: left center;
+  z-index: 2;
+  transform-origin: left center;              /* the hinge is the spine */
   transform-style: preserve-3d;
   transition: transform 0.8s ease;
-  z-index: 2;
 }
 
 .book.open .leaf {
@@ -305,13 +339,14 @@ main h2 {
   z-index: 1;
 }
 
+/* every page face */
 .face {
   position: absolute;
   inset: 0;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
   overflow: hidden;
   padding: clamp(0.6rem, 2.2vw, 1.6rem);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   font-family: Georgia, "Times New Roman", serif;
   color: var(--text);
   background: var(--paper);
@@ -330,6 +365,7 @@ main h2 {
 }
 
 .face h2 {
+  color: var(--primary);
   font-size: clamp(0.9rem, 2.6vw, 1.5rem);
 }
 
@@ -338,23 +374,57 @@ main h2 {
   line-height: 1.55;
 }
 
+/* front cover (its colors are set per book by library.js):
+   picture in the middle, title underneath, author under the title */
 .face.cover {
-  background: linear-gradient(135deg, var(--c1), var(--c2));
-  color: var(--ink);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
+  color: var(--ink);
+  background: linear-gradient(135deg, var(--c1), var(--c2));
   border: 3px solid var(--ink);
   outline: 6px solid var(--c2);
   outline-offset: -12px;
 }
 
-.face.cover h1 {
-  font-size: clamp(1.1rem, 3.6vw, 2.1rem);
+.face.cover img {
+  max-width: 70%;
+  max-height: 60%;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
+/* when the book has a Google Books image, the image IS the front cover */
+.face.cover.has-image {
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: none;
+}
+
+.face.cover.has-image img {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: cover;
+  border-radius: inherit;
+  box-shadow: none;
+}
+
+.face.cover .emoji {
+  font-size: clamp(2rem, 8vw, 4.5rem);
+}
+
+.face.cover h1 {
+  margin-top: 0.75rem;
+  font-size: clamp(0.9rem, 2.6vw, 1.4rem);
+}
+
+/* inside of the cover (left page when the book is open) */
 .face.inside {
   display: flex;
   flex-direction: column;
@@ -375,24 +445,21 @@ main h2 {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
+/* a closed book nudges to say "tap me" */
 .book:not(.open) .leaf .face.front {
   animation: nudge 2.4s ease-in-out infinite;
 }
 
 @keyframes nudge {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  50% {
-    transform: translateX(4px);
-  }
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(4px); }
 }
 
 .controls {
   max-width: 460px;
 }
 
+/* the Add book button stays in the top right corner, even when the page scrolls */
 .add-fixed {
   position: fixed;
   top: 1rem;
@@ -402,7 +469,7 @@ main h2 {
 }
 
 
-/* 10. Library page: the "Add a book" pop-up
+/* 10. Library & Add a book pages: modal and search results list
    ========================================================================== */
 div.modal {
   --bs-modal-bg: var(--paper);
@@ -416,7 +483,8 @@ div.modal {
   color: var(--primary);
 }
 
-.modal .list-group {
+.modal .list-group,
+#results {
   --bs-list-group-bg: transparent;
   --bs-list-group-color: var(--text);
   --bs-list-group-border-color: var(--accent);
@@ -434,4 +502,34 @@ div.modal {
   height: 60px;
   object-fit: cover;
   border-radius: 3px;
+}
+
+
+/* 11. Profile page
+   Add class="profile-page" to the <body> of profile.html.
+   Bootstrap builds .bg-secondary, .text-secondary, .bg-light and .bg-dark-subtle
+   from these variables, so changing them recolors those classes without
+   touching the HTML. The grey boxes become the palette's burgundy.
+   ========================================================================== */
+.profile-page {
+  --bs-secondary-rgb: 109, 36, 50;       /* = --primary */
+  --bs-light-rgb: 244, 236, 224;         /* = --bg */
+  --bs-dark-bg-subtle: var(--secondary);
+}
+
+
+/* 12. Reviews page
+   Add class="reviews-page" to the <body> of reviews.html.
+   ========================================================================== */
+.reviews-page {
+  --bs-secondary-rgb: 164, 74, 63;       /* = --secondary: the .text-secondary status message */
+}
+
+/* back arrow (use class="back-link" on any back link) */
+.back-link {
+  color: var(--primary);
+}
+
+.back-link:hover {
+  color: var(--secondary);
 }

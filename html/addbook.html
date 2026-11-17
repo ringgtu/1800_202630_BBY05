@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Add a note to a book</title>
+
+    <script type="module" src="/src/main.js"></script>
+  </head>
+
+  <body>
+    <main class="container py-4" style="max-width: 560px;">
+
+      <!-- Header: back arrow and title -->
+      <div class="d-flex align-items-center gap-3 mb-4">
+        <a href="/html/library.html" class="text-reset text-decoration-none fs-3" aria-label="Back to my library">
+          <i class="bi bi-caret-left"></i>
+        </a>
+        <h1 class="h3 mb-0">Add a note to a book</h1>
+      </div>
+
+      <hr class="mb-4" />
+
+      <section class="mb-5">
+        <h2 class="h6 mb-3">1. Find the book</h2>
+
+        <form id="searchForm">
+          <label for="searchInput" class="form-label">Search book</label>
+          <div class="input-group input-group-lg">
+            <span class="input-group-text bg-secondary-subtle border-0" aria-hidden="true">
+              <i class="bi bi-search"></i>
+            </span>
+            <input
+              type="text"
+              id="searchInput"
+              class="form-control bg-secondary-subtle border-0"
+              placeholder="e.g. The Hobbit"
+              required />
+            <button type="submit" class="btn btn-primary">Search</button>
+          </div>
+        </form>
+
+        <div id="searchStatus" class="text-body-secondary small mt-2" role="status"></div>
+        <div id="results" class="list-group mt-3"></div>
+      </section>
+
+      <section>
+        <h2 class="h6 mb-3">2. Write your note</h2>
+
+        <form id="saveHikeForm" novalidate>
+          <div id="noteBox" class="mb-4 d-none">
+            <label for="noteInput" class="form-label">Note</label>
+            <textarea
+              id="noteInput"
+              class="form-control"
+              rows="4"
+              placeholder="Add your personal notes about this book..."></textarea>
+          </div>
+
+          <button type="submit" id="saveBtn" class="btn btn-primary btn-lg w-100 rounded-pill" disabled>
+            Save
+          </button>
+        </form>
+      </section>
+
+    </main>
+
+    <site-navbar></site-navbar>
+
+    <script type="module" src="/src/components/site-navbar.js"></script>
+    <script type="module" src="/src/addbook.js"></script>
+    <link rel="stylesheet" href="/styles/style.css" />
+  </body>
+</html>

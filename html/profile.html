@@ -11,7 +11,7 @@
 
   </head>
 
-  <body>
+  <body class="profile-page">
     <main class="container py-5">
       <!-- Profile information -->
       <section id="profileCard" class="bg-secondary-subtle rounded-4 p-3">
@@ -176,7 +176,7 @@
                 <div class="bg-light" style="width: 50%; height: 32px"></div>
               </div>
               <p class="mb-0">List 1</p>
-              <small class= "">31 books</small>
+              <small>31 books</small>
             </div>
 
             <div class="bg-secondary text-white rounded-4 p-3 text-center flex-shrink-0">
@@ -208,5 +208,8 @@
     </main>
 
     <site-navbar></site-navbar>
+
+    <!-- The shared palette. It is the LAST thing on the page, so it always wins over Bootstrap. -->
+    <link rel="stylesheet" href="/styles/style.css" />
   </body>
 </html>
