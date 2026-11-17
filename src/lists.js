@@ -2,6 +2,7 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "./firebaseConfig.js";
 import { getCoverLinks } from "./master.js"; 
 import { getCurrentUser, getUserData, sortLists } from "./favorites.js"; 
+import { setBookCover } from "./bookCovers.js";
 
 const listsBox = document.getElementById("lists");
 const message = document.getElementById("listsMessage");
@@ -36,10 +37,8 @@ function renderList({ name, href, note, count, covers }) {
   for (let i = 0; i < 4; i++) {
     if (covers[i]) {
       const image = document.createElement("img");
-      image.src = covers[i];
-      image.alt = "";
       image.className = "w-100 h-100";
-      image.style.objectFit = "cover";
+      setBookCover(image, covers[i], name);
       grid.append(image);
     } else {
       const empty = document.createElement("div");

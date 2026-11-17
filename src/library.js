@@ -6,13 +6,8 @@ import "./components/site-navbar.js";
 import { auth, db } from "./firebaseConfig.js";
 import { collection, deleteDoc, doc, getDocs } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-
-const palette = [
-  { c1: "#6D2432", c2: "#2E2A26", ink: "#D9B382", emoji: "📕" },
-  { c1: "#A44A3F", c2: "#6D2432", ink: "#F4ECE0", emoji: "📙" },
-  { c1: "#D9B382", c2: "#A44A3F", ink: "#2E2A26", emoji: "📒" },
-  { c1: "#2E2A26", c2: "#6D2432", ink: "#D9B382", emoji: "📓" },
-];
+import { getBookById } from "./master.js";
+import { getBookCoverCandidates, setBookCover } from "./bookCovers.js";
 
 /* Escapes HTML special characters to prevent XSS */
 const esc = (s) =>
@@ -24,7 +19,7 @@ const esc = (s) =>
 /* ============ Firestore ============
    Books live in the subcollection users/{uid}/books/{volumeId}:
    {
-     book:     { id, title, authors: [], image },
+     book:     { id, title, authors: [], image, imageLinks },
      bookInfo: { note, views, createdAt }
    }
 */
@@ -39,20 +34,28 @@ async function loadBooks(uid) {
     .sort((a, b) => (a.bookInfo?.createdAt?.toMillis?.() ?? Infinity) - (b.bookInfo?.createdAt?.toMillis?.() ?? Infinity));
 
   return Promise.all(
-    docs.map(async (data, i) => {
+    docs.map(async (data) => {
       const info = data.book ?? {};
       const volumeId = info.id || data.id;
       const title = info.title ?? "Untitled";
       const authors = Array.isArray(info.authors) ? info.authors.join(", ") : (info.authors ?? "");
-      const image = info.image ?? "";
+      let coverCandidates = getBookCoverCandidates(info.imageLinks ?? info.image);
+      if (coverCandidates.length < 2) {
+        try {
+          const apiBook = await getBookById(volumeId);
+          const apiCandidates = getBookCoverCandidates(apiBook.volumeInfo?.imageLinks);
+          if (apiCandidates.length) coverCandidates = apiCandidates;
+        } catch (error) {
+          console.warn(`Could not load cover variants for book ${volumeId}:`, error);
+        }
+      }
       const note = data.bookInfo?.note ?? "";
 
       return {
-        ...palette[i % palette.length],
         id: volumeId,
         name: title,
         subtitle: authors,
-        image,
+        coverCandidates,
         page:
           (note
             ? `<p class="fst-italic border-start border-2 border-secondary ps-2 my-2">${esc(note)}</p>`
@@ -86,28 +89,23 @@ function buildBook(i) {
   if (!b) return;
 
   book.classList.remove("open");
-  book.style.setProperty("--c1", b.c1);
-  book.style.setProperty("--c2", b.c2);
-  book.style.setProperty("--ink", b.ink);
   book.innerHTML = `
     <div class="base"><div class="face front">${b.page}</div></div>
     <div class="leaf">
-      ${
-        b.image
-          ? `<div class="face front cover has-image">
-               <img src="${esc(b.image.replace("zoom=1", "zoom=2"))}" alt="Cover of ${esc(b.name)}">
-             </div>`
-          : `<div class="face front cover">
-               <div class="emoji">${b.emoji}</div>
-               <h1>${esc(b.name)}</h1>
-               <p class="mb-0">${esc(b.subtitle)}</p>
-             </div>`
-      }
+      <div class="face front cover has-image">
+        <img class="library-cover" src="/images/book.jpg" alt="Cover of ${esc(b.name)}">
+      </div>
       <div class="face back inside">
         <h2>${esc(b.name)}</h2>
         <p class="mb-0">${esc(b.subtitle)}</p>
       </div>
     </div>`;
+  setBookCover(
+    book.querySelector(".library-cover"),
+    b.coverCandidates,
+    b.name,
+    () => getBookById(b.id).then((apiBook) => apiBook.volumeInfo?.imageLinks)
+  );
 
   if (heading) heading.textContent = b.name;
   if (label) label.textContent = `Book ${i + 1} of ${books.length}`;

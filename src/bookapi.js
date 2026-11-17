@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 import { renderRatingStarsWithHalves, renderStars, formatDate } from "./reviewUtils.js";
 import { Modal } from "bootstrap";
+import { setBookCover } from "./bookCovers.js";
 
 async function getBookData(bookid) {
   try {
@@ -25,8 +26,7 @@ async function getBookData(bookid) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const data = await response.json();
-    return data;
+    return await response.json();
   } catch (error) {
     console.error("Error fetching book data:", error);
     throw error;
@@ -485,9 +485,7 @@ async function loadBook() {
 
     const coverEl = document.getElementById("cover");
     if (coverEl) {
-      const imgUrl =
-        v.imageLinks?.medium || v.imageLinks?.thumbnail || v.imageLinks?.smallThumbnail || "/images/book.jpg";
-      coverEl.src = imgUrl.replace("http://", "https://");
+      setBookCover(coverEl, v.imageLinks, v.title);
     }
 
     renderRetailers(bookData, v);

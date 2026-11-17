@@ -1,4 +1,5 @@
 // This is the master code for API connection
+import { getBookCoverCandidates } from "./bookCovers.js";
 
 const API_URL = "https://www.googleapis.com/books/v1/volumes";
 const API_KEY = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY;
@@ -6,6 +7,7 @@ const API_KEY = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY;
 // ---------- Remember books so Google isn't asked twice ----------
 const CACHE_KEY = "bookCache";
 const CACHE_HOURS = 24;
+const COVER_CACHE_VERSION = 2;
 const pending = new Map(); 
 
 function readCache() {
@@ -30,6 +32,7 @@ function saveToCache(book) {
     const info = book.volumeInfo ?? {};
     cache[book.id] = {
       savedAt: Date.now(),
+      coverVersion: COVER_CACHE_VERSION,
       book: {
         id: book.id,
         volumeInfo: {
@@ -38,7 +41,7 @@ function saveToCache(book) {
           categories: info.categories,
           publishedDate: info.publishedDate,
           description: info.description?.slice(0, 600),
-          imageLinks: { thumbnail: info.imageLinks?.thumbnail },
+          imageLinks: { ...info.imageLinks },
         },
       },
     };
@@ -163,7 +166,10 @@ export function sortBooks(books, sort) {
 // Get a book by its id (from the browser's memory if we have it, otherwise Google)
 export async function getBookById(bookId) {
   const saved = readCache()[bookId];
-  if (saved && Date.now() - saved.savedAt < CACHE_HOURS * 60 * 60 * 1000) {
+  if (
+    saved?.coverVersion === COVER_CACHE_VERSION &&
+    Date.now() - saved.savedAt < CACHE_HOURS * 60 * 60 * 1000
+  ) {
     return saved.book;
   }
 
@@ -186,14 +192,14 @@ export async function getBookById(bookId) {
 }
 
 
-// This function is for the cover of list. Cover links of the first few books, null where a book has no cover
+// Return the available cover sizes for each of the first few books.
 export async function getCoverLinks(bookIds, max = 4) {
   const responses = await Promise.allSettled(bookIds.slice(0, max).map(getBookById));
 
   return responses.map((response) =>
     response.status === "fulfilled"
-      ? response.value.volumeInfo.imageLinks?.thumbnail?.replace("http://", "https://") ?? null
-      : null
+      ? getBookCoverCandidates(response.value.volumeInfo?.imageLinks)
+      : []
   );
 }
 

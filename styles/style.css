@@ -374,8 +374,7 @@ main h2 {
   line-height: 1.55;
 }
 
-/* front cover (its colors are set per book by library.js):
-   picture in the middle, title underneath, author under the title */
+/* Front cover face for the library book. */
 .face.cover {
   display: flex;
   flex-direction: column;
@@ -397,7 +396,7 @@ main h2 {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
-/* when the book has a Google Books image, the image IS the front cover */
+/* The cover image fills the front cover face. */
 .face.cover.has-image {
   padding: 0;
   border: 0;
@@ -513,6 +512,18 @@ div.modal {
   height: 60px;
   object-fit: cover;
   border-radius: 3px;
+}
+
+.book-cover-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: contain;
+}
+
+.favorite-cover,
+.review-cover {
+  object-fit: contain;
 }
 
 

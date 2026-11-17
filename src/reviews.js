@@ -3,6 +3,8 @@ import { onAuthReady } from "./authentication.js";
 import { collection, collectionGroup, doc, getDoc, getDocs } from "firebase/firestore";
 import { createCover, renderStars, formatDate } from "./reviewUtils.js";
 import { initializeBackLink } from "./backLink.js";
+import { getBookById } from "./master.js";
+import { setBookCover } from "./bookCovers.js";
 
 // reviews.html = every review, reviews.html?mine=1 = only my reviews
 const params = new URLSearchParams(window.location.search);
@@ -21,6 +23,7 @@ const message = document.getElementById("reviewsMessage");
 const addReviewBtn = document.querySelector('a[href="./add_review.html"]');
 
 let allReviews = [];
+const reviewCoverRequests = new Map();
 
 heading.textContent = mineOnly
   ? "My reviews"
@@ -44,6 +47,23 @@ if (bookFilter && addReviewBtn) {
 function showMessage(text, colour = "secondary") {
   message.textContent = text;
   message.className = `text-${colour}`;
+}
+
+function loadReviewCover(cover, review) {
+  let request = reviewCoverRequests.get(review.bookId);
+  if (!request) {
+    request = getBookById(review.bookId)
+      .then((book) => book.volumeInfo?.imageLinks ?? null)
+      .catch((error) => {
+        console.warn(`Could not load cover for book ${review.bookId}:`, error);
+        return null;
+      });
+    reviewCoverRequests.set(review.bookId, request);
+  }
+
+  request.then((imageLinks) => {
+    if (imageLinks) setBookCover(cover, imageLinks, review.bookName);
+  });
 }
 
 // One review row: cover, book, stars, name and a shortened comment.
@@ -74,7 +94,9 @@ function buildItem(review) {
   text.textContent = review.comment || "";
 
   body.append(title, meta, text);
-  link.append(createCover(review.bookId, review.bookName), body);
+  const cover = createCover(review.bookName);
+  link.append(cover, body);
+  loadReviewCover(cover, review);
   return link;
 }
 

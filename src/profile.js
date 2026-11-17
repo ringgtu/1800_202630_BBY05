@@ -4,6 +4,7 @@ import { updateProfile } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { getBookById, getCoverLinks } from "./master.js";
 import { sortLists } from "./favorites.js";
+import { setBookCover } from "./bookCovers.js";
 
 const form = document.getElementById("profileForm");
 const fields = document.getElementById("profileFields");
@@ -281,10 +282,7 @@ function renderFavorite(book) {
 
   const cover = card.querySelector(".favorite-cover");
   cover.alt = title;
-  const thumbnail = info.imageLinks?.thumbnail;
-  if (thumbnail) {
-    cover.src = thumbnail.replace("http://", "https://");
-  }
+  setBookCover(cover, info.imageLinks, title);
 
   return card;
 }
@@ -338,10 +336,8 @@ function renderListPreview(list, covers) {
   for (let i = 0; i < 4; i++) {
     if (covers[i]) {
       const image = document.createElement("img");
-      image.src = covers[i];
-      image.alt = "";
       image.className = "w-100 h-100";
-      image.style.objectFit = "cover";
+      setBookCover(image, covers[i], list.name);
       grid.append(image);
     } else {
       const empty = document.createElement("div");

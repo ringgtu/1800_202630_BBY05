@@ -1,7 +1,8 @@
-import { searchBooks } from "./master.js";
+import { getBookById, searchBooks } from "./master.js";
 import { onAuthReady } from "/src/authentication.js";
 import { db } from "/src/firebaseConfig.js";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { getBookCoverCandidates, setBookCover } from "./bookCovers.js";
 
 const searchForm = document.getElementById("searchForm");
 const searchInput = document.getElementById("searchInput");
@@ -54,17 +55,17 @@ searchForm.addEventListener("submit", async (event) => {
             button.type = "button";
             button.className = "list-group-item list-group-item-action d-flex gap-3 align-items-center";
 
-            const imageURL = info.imageLinks?.thumbnail?.replace("http://", "https://");
-
-            if (imageURL) {
-                const image = document.createElement("img");
-                image.src = imageURL;
-                image.alt = "Book cover";
-                image.style.width = "55px";
-                image.style.height = "80px";
-                image.style.objectFit = "cover";
-                button.appendChild(image);
-            }
+            const image = document.createElement("img");
+            image.className = "book-cover-image rounded-2 flex-shrink-0";
+            image.style.width = "55px";
+            image.style.height = "80px";
+            setBookCover(
+                image,
+                info.imageLinks,
+                info.title,
+                () => getBookById(book.id).then((fullBook) => fullBook.volumeInfo?.imageLinks)
+            );
+            button.appendChild(image);
 
             const text = document.createElement("div");
             const title = document.createElement("strong");
@@ -88,7 +89,8 @@ searchForm.addEventListener("submit", async (event) => {
                     id: book.id,
                     title: info.title ?? "Untitled",
                     authors: info.authors ?? [],
-                    image: imageURL ?? ""
+                    image: getBookCoverCandidates(info.imageLinks)[0] ?? "",
+                    imageLinks: info.imageLinks ?? {}
                 };
 
                 noteBox.classList.remove("d-none");
@@ -119,7 +121,8 @@ saveBtn.addEventListener("click", async () => {
                 id: selectedBook.id,
                 title: selectedBook.title,
                 authors: selectedBook.authors,
-                image: selectedBook.image
+                image: selectedBook.image,
+                imageLinks: selectedBook.imageLinks
             },
             bookInfo: {
                 note: noteInput.value.trim(),
