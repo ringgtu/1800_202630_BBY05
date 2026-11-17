@@ -1,14 +1,7 @@
-<<<<<<< HEAD
 import { doc, setDoc, arrayRemove, serverTimestamp } from "firebase/firestore";
 import { db } from "./firebaseConfig.js";
 import { getBookById, getTags } from "./master.js";
 import { getCurrentUser, getFavorites, getUserData } from "./favorites.js";
-=======
-import { doc, setDoc, arrayRemove } from "firebase/firestore";
-import { db } from "./firebaseConfig.js";
-import { getBookById, getTags } from "./master.js";
-import { getCurrentUser, getFavorites } from "./favorites.js";
->>>>>>> 6e3e478e7714128c78286773bf366d5319d89544
 
 const results = document.getElementById("results");
 const heading = document.getElementById("results-heading");
@@ -49,7 +42,6 @@ function updateHeading() {
   const count = [...results.children].filter((card) => !card.hidden).length;
 
   if (count === 0) {
-<<<<<<< HEAD
     heading.textContent = failedCount ? "Could not load your books." : emptyText;
     return;
   }
@@ -57,31 +49,15 @@ function updateHeading() {
    heading.textContent =
     `${count} ${count === 1 ? "book" : "books"} ${listId ? "in this list" : "saved"}` +
     (failedCount ? ` (${failedCount} could not be loaded)` : "") +
-=======
-    heading.textContent = failedCount
-      ? "Could not load your favorites."
-      : "No favorites yet. Tap the heart on a book to save it here.";
-    return;
-  }
-
-  heading.textContent =
-    `${count} ${count === 1 ? "book" : "books"} saved` +
-    (unfavCount ? ` (${unfavCount} could not be loaded)` : "") +
->>>>>>> 6e3e478e7714128c78286773bf366d5319d89544
     ":";
 }
 
 
-<<<<<<< HEAD
 async function removeFromList(card, bookID, user) {
-=======
-async function removeFavorite(card, bookID, user) {
->>>>>>> 6e3e478e7714128c78286773bf366d5319d89544
   card.hidden = true;
   updateHeading();
 
   try {
-<<<<<<< HEAD
     const userRef = doc(db, "users", user.uid);
 
     if (listId) {
@@ -95,16 +71,6 @@ async function removeFavorite(card, bookID, user) {
     }
   } catch (error) {
     console.error("Error removing book:", error);
-=======
-    await setDoc(
-      doc(db, "users", user.uid),
-      { favorites: arrayRemove(bookID) },
-      { merge: true }
-    );
-  } catch (error) {
-    console.error("Error removing favorite:", error);
-    // The save failed, so bring the card back
->>>>>>> 6e3e478e7714128c78286773bf366d5319d89544
     card.hidden = false;
     updateHeading();
   }
@@ -195,16 +161,9 @@ async function showBooks() {
       .filter((response) => response.status === "fulfilled")
       .map((response) => response.value);
 
-<<<<<<< HEAD
     failedCount = responses.length - books.length;
     results.replaceChildren(...books.map((book) => renderBook(book, user)));
     updateHeading();
-=======
-    unfavCount = responses.length - books.length;
-
-    results.replaceChildren(...books.map((book) => renderBook(book, user)));
-    updateHeading()
->>>>>>> 6e3e478e7714128c78286773bf366d5319d89544
   } catch (error) {
     console.error("Error loading books:", error);
     heading.textContent = "Something went wrong. Please try again.";

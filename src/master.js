@@ -3,7 +3,6 @@
 const API_URL = "https://www.googleapis.com/books/v1/volumes";
 const API_KEY = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY;
 
-<<<<<<< HEAD
 // ---------- Remember books so Google isn't asked twice ----------
 const CACHE_KEY = "bookCache";
 const CACHE_HOURS = 24;
@@ -49,8 +48,6 @@ function saveToCache(book) {
     // Storage is full or blocked: just skip caching
   }
 }
-=======
->>>>>>> 6e3e478e7714128c78286773bf366d5319d89544
 
 // Search, record the tags & param for filter as well
 export async function searchBooks({ q = "", genres = [], tags = [] } = {}) {
@@ -147,11 +144,8 @@ export async function getCoverLinks(bookIds, max = 4) {
       ? response.value.volumeInfo.imageLinks?.thumbnail?.replace("http://", "https://") ?? null
       : null
   );
-<<<<<<< HEAD
 }
 
-=======
->>>>>>> 6e3e478e7714128c78286773bf366d5319d89544
 
 // Sometimes the tags from googlebooksAPI can be very long like "Fiction / Mystery"
 // Spliting the tags to make genre filter work properly
@@ -171,9 +165,4 @@ export function getTags(book, picked = [], max = 3) {
       return true;
     })
     .slice(0, max);
-<<<<<<< HEAD
 }
-
-=======
-}
->>>>>>> 6e3e478e7714128c78286773bf366d5319d89544
