@@ -64,6 +64,7 @@ async function loadBooks(uid) {
 }
 
 /* ============ 3D Book on the Page ============ */
+const stage = document.getElementById("stage");
 const shelf = document.getElementById("shelf");
 const book = document.getElementById("book");
 const hint = document.getElementById("hint");
@@ -71,6 +72,9 @@ const heading = document.getElementById("heading");
 const label = document.getElementById("label");
 const nextBtn = document.getElementById("next");
 const prevBtn = document.getElementById("prev");
+const controls = document.getElementById("controls");
+const reviewsContainer = document.getElementById("reviewsContainer");
+const reviewsBtn = document.getElementById("reviewsBtn");
 
 let bookIdx = 0;
 let busy = false;
@@ -106,6 +110,19 @@ function buildBook(i) {
 
   if (heading) heading.textContent = b.name;
   if (label) label.textContent = `Book ${i + 1} of ${books.length}`;
+
+  if (reviewsBtn) {
+    reviewsBtn.href = `./reviews.html?bookid=${encodeURIComponent(b.id)}&title=${encodeURIComponent(b.name)}&from=library`;
+  }
+
+  if (prevBtn && nextBtn) {
+    const single = books.length <= 1;
+    prevBtn.disabled = single;
+    nextBtn.disabled = single;
+    prevBtn.classList.toggle("opacity-50", single);
+    nextBtn.classList.toggle("opacity-50", single);
+  }
+
   updateHint();
 }
 
@@ -117,7 +134,7 @@ function updateHint() {
 }
 
 function switchBook(dir) {
-  if (busy || !books.length) return;
+  if (busy || books.length <= 1) return;
   busy = true;
   shelf.classList.add(dir > 0 ? "out-left" : "out-right");
   setTimeout(() => {
@@ -143,11 +160,17 @@ async function refresh() {
   books = await loadBooks(currentUser.uid);
   if (!books.length) {
     book.innerHTML = "";
+    if (stage) stage.classList.add("d-none");
+    if (controls) controls.classList.add("d-none");
+    if (reviewsContainer) reviewsContainer.classList.add("d-none");
     if (heading) heading.textContent = "My Library";
     if (label) label.textContent = "";
     if (hint) hint.textContent = 'No books yet. Press "Add book" in the top right to add your first one.';
     return;
   }
+  if (stage) stage.classList.remove("d-none");
+  if (controls) controls.classList.remove("d-none");
+  if (reviewsContainer) reviewsContainer.classList.remove("d-none");
   bookIdx = 0;
   buildBook(bookIdx);
 }
@@ -191,6 +214,9 @@ onAuthStateChanged(auth, (user) => {
   currentUser = user;
   const addBtn = document.getElementById("addBtn");
   if (!user) {
+    if (stage) stage.classList.add("d-none");
+    if (controls) controls.classList.add("d-none");
+    if (reviewsContainer) reviewsContainer.classList.add("d-none");
     if (addBtn) addBtn.classList.add("d-none");
     if (hint) {
       hint.innerHTML = 'Please <a href="/html/login.html" class="fw-semibold text-decoration-none">log in</a> to see your library.';
@@ -200,6 +226,9 @@ onAuthStateChanged(auth, (user) => {
   if (addBtn) addBtn.classList.remove("d-none");
   refresh().catch((err) => {
     console.error("Could not load library:", err);
+    if (stage) stage.classList.add("d-none");
+    if (controls) controls.classList.add("d-none");
+    if (reviewsContainer) reviewsContainer.classList.add("d-none");
     if (hint) hint.textContent = "Could not load books. Refresh the page to try again.";
   });
 });

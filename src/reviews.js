@@ -1,13 +1,16 @@
 import { db } from "./firebaseConfig.js";
 import { onAuthReady } from "./authentication.js";
-import { collectionGroup, doc, getDoc, getDocs } from "firebase/firestore";
+import { collection, collectionGroup, doc, getDoc, getDocs } from "firebase/firestore";
 import { createCover, renderStars, formatDate } from "./reviewUtils.js";
 
 // reviews.html = every review, reviews.html?mine=1 = only my reviews
-const mineOnly = new URLSearchParams(window.location.search).get("mine") === "1";
+const params = new URLSearchParams(window.location.search);
+const mineOnly = params.get("mine") === "1";
 const bookFilter =
-  new URLSearchParams(window.location.search).get("book") ||
-  new URLSearchParams(window.location.search).get("bookid");
+  params.get("book") ||
+  params.get("bookid");
+const paramTitle = params.get("title");
+const from = params.get("from");
 
 const heading = document.getElementById("reviewsHeading");
 const backLink = document.getElementById("backLink");
@@ -18,15 +21,29 @@ const addReviewBtn = document.querySelector('a[href="./add_review.html"]');
 
 let allReviews = [];
 
-heading.textContent = mineOnly ? "My reviews" : "Reviews";
+heading.textContent = mineOnly
+  ? "My reviews"
+  : paramTitle
+    ? `Reviews: ${paramTitle}`
+    : "Reviews";
+
 backLink.href = mineOnly
   ? "./profile.html"
-  : bookFilter
-    ? `./book_info.html?bookid=${encodeURIComponent(bookFilter)}`
-    : "./library.html";
+  : from === "library"
+    ? "./library.html"
+    : bookFilter
+      ? `./book_info.html?bookid=${encodeURIComponent(bookFilter)}`
+      : "./library.html";
+
+backLink.addEventListener("click", (e) => {
+  if (document.referrer && new URL(document.referrer).origin === window.location.origin) {
+    e.preventDefault();
+    history.back();
+  }
+});
 
 if (bookFilter && addReviewBtn) {
-  addReviewBtn.href = `./add_review.html?bookid=${encodeURIComponent(bookFilter)}`;
+  addReviewBtn.href = `./add_review.html?bookid=${encodeURIComponent(bookFilter)}${paramTitle ? `&title=${encodeURIComponent(paramTitle)}` : ""}`;
 }
 
 function showMessage(text, colour = "secondary") {
@@ -84,7 +101,9 @@ function render() {
         ? "No reviews match your search."
         : mineOnly
           ? "You haven't written any reviews yet. Select Add reviews to write one."
-          : "No reviews yet. Select Add reviews to write the first one."
+          : bookFilter
+            ? "No reviews yet for this book. Select Add reviews to write the first one."
+            : "No reviews yet. Select Add reviews to write the first one."
     );
     return;
   }
@@ -101,6 +120,16 @@ async function loadAll() {
   return snapshot.docs.map((d) => ({
     id: d.id,
     bookId: d.ref.parent.parent.id,
+    ...d.data(),
+  }));
+}
+
+// Reviews specifically for one book: books/{bookId}/review
+async function loadForBook(bookId) {
+  const snapshot = await getDocs(collection(db, "books", bookId, "review"));
+  return snapshot.docs.map((d) => ({
+    id: d.id,
+    bookId,
     ...d.data(),
   }));
 }
@@ -131,10 +160,27 @@ onAuthReady(async (user) => {
   showMessage("Loading reviews…");
 
   try {
-    allReviews = mineOnly ? await loadMine(user) : await loadAll();
+    if (mineOnly) {
+      allReviews = await loadMine(user);
+      if (bookFilter) {
+        allReviews = allReviews.filter((r) => r.bookId === bookFilter);
+      }
+    } else if (bookFilter) {
+      try {
+        allReviews = await loadForBook(bookFilter);
+      } catch (err) {
+        console.warn("Could not load from book subcollection, falling back to collectionGroup:", err);
+        allReviews = (await loadAll()).filter((r) => r.bookId === bookFilter);
+      }
+    } else {
+      allReviews = await loadAll();
+    }
+
     if (bookFilter) {
       allReviews = allReviews.filter((r) => r.bookId === bookFilter);
-      if (allReviews.length && allReviews[0].bookName) {
+      if (paramTitle) {
+        heading.textContent = `Reviews: ${paramTitle}`;
+      } else if (allReviews.length && allReviews[0].bookName) {
         heading.textContent = `Reviews: ${allReviews[0].bookName}`;
       }
     }
