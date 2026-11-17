@@ -5,17 +5,29 @@ import { createCover, renderStars, formatDate } from "./reviewUtils.js";
 
 // reviews.html = every review, reviews.html?mine=1 = only my reviews
 const mineOnly = new URLSearchParams(window.location.search).get("mine") === "1";
+const bookFilter =
+  new URLSearchParams(window.location.search).get("book") ||
+  new URLSearchParams(window.location.search).get("bookid");
 
 const heading = document.getElementById("reviewsHeading");
 const backLink = document.getElementById("backLink");
 const searchInput = document.getElementById("reviewsSearch");
 const list = document.getElementById("reviewsList");
 const message = document.getElementById("reviewsMessage");
+const addReviewBtn = document.querySelector('a[href="./add_review.html"]');
 
 let allReviews = [];
 
 heading.textContent = mineOnly ? "My reviews" : "Reviews";
-backLink.href = mineOnly ? "./profile.html" : "./library.html";
+backLink.href = mineOnly
+  ? "./profile.html"
+  : bookFilter
+    ? `./book_info.html?bookid=${encodeURIComponent(bookFilter)}`
+    : "./library.html";
+
+if (bookFilter && addReviewBtn) {
+  addReviewBtn.href = `./add_review.html?bookid=${encodeURIComponent(bookFilter)}`;
+}
 
 function showMessage(text, colour = "secondary") {
   message.textContent = text;
@@ -120,6 +132,12 @@ onAuthReady(async (user) => {
 
   try {
     allReviews = mineOnly ? await loadMine(user) : await loadAll();
+    if (bookFilter) {
+      allReviews = allReviews.filter((r) => r.bookId === bookFilter);
+      if (allReviews.length && allReviews[0].bookName) {
+        heading.textContent = `Reviews: ${allReviews[0].bookName}`;
+      }
+    }
     allReviews.sort(
       (a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0)
     );
