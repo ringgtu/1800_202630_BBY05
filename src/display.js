@@ -3,7 +3,7 @@
 // the info and replace it. After the user do the action, 
 import { doc, setDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { db } from "./firebaseConfig.js"; 
-import { searchBooks, sortBooks } from "./master.js";
+import { searchBooks, sortBooks, getTags } from "./master.js";
 import { getCurrentUser, getFavorites } from "./favorites.js";
 
 const params = new URLSearchParams(window.location.search);
@@ -133,13 +133,12 @@ function renderBook(book) {
 
     // Tags: remove the placeholder
     const tagBox = card.querySelector(".book-tags");
-     tagBox.querySelectorAll(".badge").forEach((badge) => badge.remove());
-    (info.categories ?? []).slice(0, 3).forEach((category) => {
-        const badge = document.createElement("span");
-        badge.className = "badge rounded-pill bg-secondary-subtle text-body fw-normal fs-6 px-3 py-2";
-        badge.textContent = category;
-        tagBox.append(badge);
-    });
+    getTags(book, genres).forEach((tag) => { 
+    const badge = document.createElement("span");
+    badge.className = "badge rounded-pill bg-secondary-subtle text-body fw-normal fs-6 px-3 py-2";
+    badge.textContent = tag; // CHANGED
+    tagBox.append(badge);
+  });
 
     setupHeart(card, book.id);
 
@@ -180,7 +179,7 @@ try {
     results.replaceChildren(...books.map(renderBook));
   } else {
     // Before action
-    heading.textContent = "Recommended:";
+    heading.textContent = "Recommended Books:";
     results.replaceChildren(...shuffle(books).slice(0, 4).map(renderBook));
   }
 } catch (error) {

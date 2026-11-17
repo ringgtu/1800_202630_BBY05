@@ -7,16 +7,17 @@
 
     <script type="module" src="/src/main.js"></script>
     <script type="module" src="/src/favoritesList.js"></script>
+    <script type="module" src="/src/backLink.js"></script>
   </head>
 
   <body>
     <main class="container py-4">
       <!-- Back to the profile -->
-      <a href="profile.html" class="text-reset text-decoration-none" aria-label="Back to profile">
+      <a href="profile.html" id="back-link" class="text-reset text-decoration-none" aria-label="Back">
         <i class="bi bi-caret-left fs-1"></i>
       </a>
 
-      <h1 class="h3 mt-3">My Favorites</h1>
+      <h1 class="h3 mt-3" id="page-title">My Favorites</h1>
       <h2 class="h5 mb-4" id="results-heading">Loading...</h2>
 
       <!-- favoritesPage.js fills this with the saved books -->

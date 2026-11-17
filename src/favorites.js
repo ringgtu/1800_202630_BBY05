@@ -17,3 +17,18 @@ export async function getFavorites(uid) {
   const snapshot = await getDoc(doc(db, "users", uid));
   return snapshot.exists() ? snapshot.data().favorites ?? [] : [];
 }
+
+
+export async function getUserData(uid) {
+  const snapshot = await getDoc(doc(db, "users", uid));
+  return snapshot.exists() ? snapshot.data() : {};
+}
+
+export function sortLists(myList = {}) {
+  return Object.entries(myList)
+    .map(([id, list]) => ({ id, ...list }))
+    .sort(
+      (a, b) =>
+        (b.updatedAt?.toMillis?.() ?? Date.now()) - (a.updatedAt?.toMillis?.() ?? Date.now())
+    );
+}

@@ -1,7 +1,7 @@
-import { collection, query, orderBy, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore"; 
 import { db } from "./firebaseConfig.js";
-import { getBookById } from "./master.js";
-import { getCurrentUser, getFavorites } from "./favorites.js";
+import { getCoverLinks } from "./master.js"; 
+import { getCurrentUser, getUserData, sortLists } from "./favorites.js"; 
 
 const listsBox = document.getElementById("lists");
 const message = document.getElementById("listsMessage");
@@ -12,24 +12,12 @@ const nameInput = document.getElementById("newListName");
 const createButton = document.getElementById("createList");
 
 let currentUser = null;
-const myListRef = () => collection(db, "users", currentUser.uid, "myList");
 let usedNames = new Set(["favorites"]); 
 
-// Timestamp -> "2026-10-06"
+// Timestamp -> "2026-11-16"
 function formatDate(timestamp) {
   const date = timestamp?.toDate ? timestamp.toDate() : new Date();
   return date.toLocaleDateString("en-CA");
-}
-
-// Cover links of the 4 OLDEST books (the first 4 ids); null where there is none
-async function getCovers(bookIds) {
-  const responses = await Promise.allSettled(bookIds.slice(0, 4).map(getBookById));
-
-  return responses.map((response) =>
-    response.status === "fulfilled"
-      ? response.value.volumeInfo.imageLinks?.thumbnail?.replace("http://", "https://") ?? null
-      : null
-  );
 }
 
 // Build one list card
@@ -66,30 +54,26 @@ function renderList({ name, href, note, count, covers }) {
 // Load Favorites + the user's lists and draw them
 async function showLists() {
   try {
-    const favoriteIds = await getFavorites(currentUser.uid);
-
-    // Only this user's lists. One where() needs no Firestore index
-    const snapshot = await getDocs(query(myListRef(), orderBy("updatedAt", "desc")));
-    
-    // Most recently updated first
-    const lists = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+    const data = await getUserData(currentUser.uid);
+    const favoriteIds = data.favorites ?? [];
+    const lists = sortLists(data.myList);
 
     usedNames = new Set(["favorites", ...lists.map((list) => list.name.toLowerCase())]);
 
     const items = [
       // Favorites always first
-      { name: "Favorites", href: "favorites.html", note: "Default list", books: favoriteIds },
-      ...lists.map((list) => ({
+      { name: "Favorites", href: "favorite_list.html", note: "Default list", books: favoriteIds },
+        ...lists.map((list) => ({
         name: list.name,
-        href: `favorites.html?list=${list.id}`,
-        note: `Last updated: ${formatDate(list.updatedAt)}`,
-        books: list.books ?? [],
+        href: `favorite_list.html?list=${list.id}`,
+        note: `Last updated: ${formatDate(list.updatedAt)}`, 
+        books: list.books ?? [], 
       })),
     ];
 
     const cards = await Promise.all(
       items.map(async (item) =>
-        renderList({ ...item, count: item.books.length, covers: await getCovers(item.books) })
+        renderList({ ...item, count: item.books.length, covers: await getCoverLinks(item.books), })
       )
     );
 
@@ -122,13 +106,22 @@ newForm.addEventListener("submit", async (event) => {
   createButton.disabled = true;
 
   try {
-    await addDoc(collection(db, "lists"), {
-      ownerId: currentUser.uid,
-      name,
-      books: [],
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
+    const listId = crypto.randomUUID().replaceAll("-", "");
+
+    await setDoc(
+      doc(db, "users", currentUser.uid),
+      {
+        myList: {
+          [listId]: {
+            name,
+            books: [],
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          },
+        },
+      },
+      { merge: true }
+    );
 
     nameInput.value = "";
     newForm.hidden = true;
