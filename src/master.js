@@ -52,32 +52,83 @@ function saveToCache(book) {
 // Search, record the tags & param for filter as well
 export async function searchBooks({ q = "", genres = [], tags = [] } = {}) {
   try {
+    const isBestseller = tags.some((t) => t.toLowerCase() === "bestseller");
+    const otherTags = tags.filter((t) => t.toLowerCase() !== "bestseller");
+
+    const mapTag = (tag) => {
+      const lower = tag.toLowerCase();
+      if (lower === "classic") return `subject:classics`;
+      if (lower === "teen") return `subject:"young adult fiction"`;
+      return `"${tag}"`;
+    };
+
     // Build the query from every part that has a value
     const parts = [
       q.trim(),
-      ...tags.map((tag) => `"${tag}"`),
+      ...otherTags.map(mapTag),
       ...genres.map((genre) => `subject:"${genre}"`),
     ].filter(Boolean);
+
+    if (isBestseller) {
+      if (parts.length === 0) {
+        parts.push(`subject:fiction ("New York Times bestseller" OR "national bestseller" OR "bestseller")`);
+      } else {
+        parts.push(`("bestseller" OR "bestselling" OR "best seller")`);
+      }
+      parts.push(`-intitle:bestseller -intitle:bestselling -intitle:bestsellers -intitle:"best seller" -intitle:"new york times" -intitle:"book review"`);
+    }
 
     // The API requires q, so use a default for the "Recommended" list
     const query = parts.join(" ") || "subject:fiction";
 
-    const params = new URLSearchParams({
-      q: query,
-      maxResults: 40,
-      key: API_KEY,
-    });
+    const fetchItems = async (queryString) => {
+      const params = new URLSearchParams({
+        q: queryString,
+        maxResults: 40,
+        printType: "books",
+        key: API_KEY,
+      });
 
-    const response = await fetch(`${API_URL}?${params}`, {
-      method: "GET",
-    });
+      const response = await fetch(`${API_URL}?${params}`, {
+        method: "GET",
+      });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.items ?? [];
+    };
+
+    let items = await fetchItems(query);
+
+    if (isBestseller) {
+      // Exclude books that literally have "bestseller" or "best seller" in their title
+      items = items.filter((book) => {
+        const title = (book.volumeInfo?.title ?? "").toLowerCase();
+        if (/bestsell|best\s*seller/i.test(title)) return false;
+        if (!book.volumeInfo?.authors || book.volumeInfo.authors.length === 0) return false;
+        return true;
+      });
+
+      // Fallback if the strict bestseller keywords yielded no results
+      if (items.length === 0 && (q.trim() || genres.length > 0)) {
+        const fallbackParts = [
+          q.trim(),
+          ...otherTags.map(mapTag),
+          ...genres.map((genre) => `subject:"${genre}"`),
+          `-intitle:bestseller -intitle:bestselling -intitle:bestsellers -intitle:"best seller"`,
+        ].filter(Boolean);
+        items = await fetchItems(fallbackParts.join(" "));
+        items = items.filter((book) => {
+          const title = (book.volumeInfo?.title ?? "").toLowerCase();
+          return !/bestsell|best\s*seller/i.test(title);
+        });
+      }
     }
 
-    const data = await response.json();
-    return data.items ?? [];
+    return items;
   } catch (error) {
     console.error("Error searching books:", error);
     throw error;
