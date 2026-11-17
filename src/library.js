@@ -4,7 +4,7 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 import "/styles/style.css";
 import "./components/site-navbar.js";
 import { auth, db } from "./firebaseConfig.js";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDocs } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 
 const palette = [
@@ -75,6 +75,7 @@ const prevBtn = document.getElementById("prev");
 const controls = document.getElementById("controls");
 const reviewsContainer = document.getElementById("reviewsContainer");
 const reviewsBtn = document.getElementById("reviewsBtn");
+const deleteBtn = document.getElementById("deleteBtn");
 
 let bookIdx = 0;
 let busy = false;
@@ -205,6 +206,42 @@ if (book) {
   });
   book.addEventListener("pointercancel", () => {
     startX = null;
+  });
+}
+
+/* ============ Delete current book ============ */
+if (deleteBtn) {
+  deleteBtn.addEventListener("click", async () => {
+    if (!currentUser || !books.length) return;
+
+    const current = books[bookIdx];
+    if (!confirm(`Remove "${current.name}" from your library?`)) return;
+
+    deleteBtn.disabled = true;
+    try {
+      await deleteDoc(doc(db, "users", currentUser.uid, "books", current.id));
+      books.splice(bookIdx, 1);
+
+      if (!books.length) {
+        // Last book removed — hide everything
+        book.innerHTML = "";
+        if (stage) stage.classList.add("d-none");
+        if (controls) controls.classList.add("d-none");
+        if (reviewsContainer) reviewsContainer.classList.add("d-none");
+        if (heading) heading.textContent = "My Library";
+        if (label) label.textContent = "";
+        if (hint) hint.textContent = 'No books yet. Press "Add book" in the top right to add your first one.';
+      } else {
+        // Show the next book (or wrap to 0)
+        bookIdx = bookIdx % books.length;
+        buildBook(bookIdx);
+      }
+    } catch (err) {
+      console.error("Could not delete book:", err);
+      alert("Could not remove the book. Please try again.");
+    } finally {
+      deleteBtn.disabled = false;
+    }
   });
 }
 
