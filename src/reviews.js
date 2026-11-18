@@ -2,7 +2,7 @@ import { db } from "./firebaseConfig.js";
 import { onAuthReady } from "./authentication.js";
 import { collection, collectionGroup, doc, getDoc, getDocs } from "firebase/firestore";
 import { createCover, renderStars, formatDate } from "./reviewUtils.js";
-import { initializeBackLink } from "./backLink.js";
+
 import { getBookById } from "./master.js";
 import { setBookCover } from "./bookCovers.js";
 
@@ -38,7 +38,7 @@ backLink.href = mineOnly
     : bookFilter
       ? `./book_info.html?bookid=${encodeURIComponent(bookFilter)}`
       : "./library.html";
-initializeBackLink(backLink);
+
 
 if (bookFilter && addReviewBtn) {
   addReviewBtn.href = `./add_review.html?bookid=${encodeURIComponent(bookFilter)}${paramTitle ? `&title=${encodeURIComponent(paramTitle)}` : ""}`;
