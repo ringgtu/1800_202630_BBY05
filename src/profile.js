@@ -1,5 +1,5 @@
 import { auth, db } from "./firebaseConfig.js";
-import { onAuthReady } from "./authentication.js";
+import { logoutUser, onAuthReady } from "./authentication.js";
 import { updateProfile } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { getBookById, getCoverLinks } from "./master.js";
@@ -35,6 +35,7 @@ const viewIdentity = document.getElementById("viewIdentity");
 const editButton = document.getElementById("editProfile");
 const cancelButton = document.getElementById("cancelEdit");
 const backButton = document.getElementById("backToProfile");
+const logoutButton = document.getElementById("logoutButton");
 
 const MAX_SHOWN_FAVORITES = 9;
 const MAX_SHOWN_LISTS = 9;
@@ -128,6 +129,17 @@ cancelButton.addEventListener("click", () => {
   fillForm(); // discard anything typed
   showMessage("");
   setMode("detail");
+});
+
+logoutButton.addEventListener("click", async () => {
+  logoutButton.disabled = true;
+  try {
+    await logoutUser();
+  } catch (error) {
+    console.error("Could not log out:", error);
+    showMessage("Could not log out. Please try again.", "danger");
+    logoutButton.disabled = false;
+  }
 });
 
 // READ: load the signed-in user's details from Firestore.
