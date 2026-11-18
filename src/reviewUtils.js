@@ -1,21 +1,12 @@
 // Small helpers shared by the review pages.
-const palette = [
-  ["#7a2e2e", "#4d1717", "#f2d9a0"],
-  ["#1f4e79", "#0e2a47", "#bfe3f5"],
-  ["#2f6b4f", "#173a2a", "#e6f0c2"],
-  ["#6b3f7a", "#3a1f45", "#f0d6f7"],
-];
+import { setBookCover } from "./bookCovers.js";
 
-// A coloured book cover with the title on it (same look as the library).
-export function createCover(bookId, bookName, width = 80) {
-  let n = 0;
-  for (const ch of String(bookId || "")) n += ch.charCodeAt(0);
-  const [c1, c2, ink] = palette[n % palette.length];
-  const cover = document.createElement("div");
-  cover.className =
-    "d-flex align-items-center justify-content-center text-center rounded-2 flex-shrink-0 p-1 fw-semibold";
-  cover.style.cssText = `width:${width}px;height:${Math.round(width * 1.4)}px;background:linear-gradient(135deg,${c1},${c2});color:${ink};font-family:Georgia,serif;font-size:${width > 100 ? 1.2 : 0.8}rem;overflow:hidden;`;
-  cover.textContent = bookName || "Book";
+export function createCover(bookName, width = 80) {
+  const cover = document.createElement("img");
+  cover.className = "review-cover rounded-2 flex-shrink-0";
+  cover.style.width = `${width}px`;
+  cover.style.height = `${Math.round(width * 1.4)}px`;
+  setBookCover(cover, null, bookName);
   return cover;
 }
 

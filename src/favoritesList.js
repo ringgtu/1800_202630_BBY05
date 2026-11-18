@@ -2,6 +2,8 @@ import { doc, setDoc, arrayRemove, serverTimestamp } from "firebase/firestore";
 import { db } from "./firebaseConfig.js";
 import { getBookById, getTags } from "./master.js";
 import { getCurrentUser, getFavorites, getUserData } from "./favorites.js";
+import { initializeBackLink } from "./backLink.js";
+import { setBookCover } from "./bookCovers.js";
 
 const results = document.getElementById("results");
 const heading = document.getElementById("results-heading");
@@ -11,6 +13,7 @@ const backLink = document.getElementById("back-link");
 
 const listId = new URLSearchParams(window.location.search).get("list");
 if (listId) backLink.href = "lists.html"; 
+initializeBackLink(backLink);
 
 const emptyText = listId 
   ? "This list is empty."
@@ -87,10 +90,7 @@ function renderBook(book, user) {
     title.href = `book_info.html?bookid=${book.id}`;
 
     // Cover 
-    const thumbnail = info.imageLinks?.thumbnail;
-    if (thumbnail) {
-    card.querySelector(".book-cover").src = thumbnail.replace("http://", "https://");
-    }
+    setBookCover(card.querySelector(".book-cover"), info.imageLinks, info.title);
 
     // Description
     const text = stripHtml(info.description ?? "No description available.");

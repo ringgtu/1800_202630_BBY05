@@ -10,6 +10,9 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { createCover, renderStars, formatDate } from "./reviewUtils.js";
+import { initializeBackLink } from "./backLink.js";
+import { getBookById } from "./master.js";
+import { setBookCover } from "./bookCovers.js";
 
 const message = document.getElementById("detailMessage");
 const article = document.getElementById("detailReview");
@@ -31,6 +34,7 @@ let review = null;
 let isOwner = false;
 let rating = 0;
 let busy = false;
+let bookCoverRequest = null;
 
 function showAction(text, colour = "secondary") {
   actionMessage.textContent = text;
@@ -39,9 +43,19 @@ function showAction(text, colour = "secondary") {
 
 // Fill the page from the review data.
 function render() {
-  document.getElementById("detailCover").replaceChildren(
-    createCover(review.bookId, review.bookName, 110)
-  );
+  const cover = createCover(review.bookName, 110);
+  document.getElementById("detailCover").replaceChildren(cover);
+  if (!bookCoverRequest) {
+    bookCoverRequest = getBookById(review.bookId)
+      .then((book) => book.volumeInfo?.imageLinks ?? null)
+      .catch((error) => {
+        console.warn(`Could not load cover for book ${review.bookId}:`, error);
+        return null;
+      });
+  }
+  bookCoverRequest.then((imageLinks) => {
+    if (imageLinks) setBookCover(cover, imageLinks, review.bookName);
+  });
   document.getElementById("detailBook").textContent = review.bookName || "Book";
   document.getElementById("detailStars").replaceChildren(renderStars(review.rating || 0));
   document.getElementById("detailMeta").textContent =
@@ -172,13 +186,12 @@ onAuthReady(async (user) => {
   bookId = params.get("book");
   reviewId = params.get("id");
 
-  if (bookId) {
-    const backLink = document.querySelector('a[aria-label="Back to reviews"]');
-    if (backLink) {
-      backLink.href = `./book_info.html?bookid=${encodeURIComponent(bookId)}`;
-      backLink.setAttribute("aria-label", "Back to book details");
-    }
+  const backLink = document.querySelector('a[aria-label="Back to reviews"]');
+  if (backLink && bookId) {
+    backLink.href = `./book_info.html?bookid=${encodeURIComponent(bookId)}`;
+    backLink.setAttribute("aria-label", "Back to book details");
   }
+  initializeBackLink(backLink);
 
   if (!bookId || !reviewId) {
     message.textContent = "No review selected.";

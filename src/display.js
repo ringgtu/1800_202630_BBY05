@@ -3,8 +3,9 @@
 // the info and replace it. After the user do the action, 
 import { doc, setDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { db } from "./firebaseConfig.js"; 
-import { searchBooks, sortBooks, getTags } from "./master.js";
+import { getBookById, searchBooks, sortBooks, getTags } from "./master.js";
 import { getCurrentUser, getFavorites } from "./favorites.js";
+import { setBookCover } from "./bookCovers.js";
 
 const params = new URLSearchParams(window.location.search);
 
@@ -120,11 +121,12 @@ function renderBook(book) {
     title.textContent = info.title ?? "Untitled";
     title.href = `book_info.html?bookid=${book.id}`;
 
-    // Book cover (keep it as placeholder if the book has none)
-    const thumbnail = info.imageLinks?.thumbnail;
-    if (thumbnail) {
-        card.querySelector(".book-cover").src = thumbnail.replace("http://", "https://");
-    }
+    setBookCover(
+      card.querySelector(".book-cover"),
+      info.imageLinks,
+      info.title,
+      () => getBookById(book.id).then((fullBook) => fullBook.volumeInfo?.imageLinks)
+    );
 
     // Short Description
     const text = stripHtml(info.description ?? "No description available.");

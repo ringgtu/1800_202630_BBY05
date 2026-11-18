@@ -1,4 +1,5 @@
 // This is the master code for API connection
+import { getBookCoverCandidates } from "./bookCovers.js";
 
 const API_URL = "https://www.googleapis.com/books/v1/volumes";
 const API_KEY = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY;
@@ -6,6 +7,7 @@ const API_KEY = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY;
 // ---------- Remember books so Google isn't asked twice ----------
 const CACHE_KEY = "bookCache";
 const CACHE_HOURS = 24;
+const COVER_CACHE_VERSION = 2;
 const pending = new Map(); 
 
 function readCache() {
@@ -30,6 +32,7 @@ function saveToCache(book) {
     const info = book.volumeInfo ?? {};
     cache[book.id] = {
       savedAt: Date.now(),
+      coverVersion: COVER_CACHE_VERSION,
       book: {
         id: book.id,
         volumeInfo: {
@@ -38,7 +41,7 @@ function saveToCache(book) {
           categories: info.categories,
           publishedDate: info.publishedDate,
           description: info.description?.slice(0, 600),
-          imageLinks: { thumbnail: info.imageLinks?.thumbnail },
+          imageLinks: { ...info.imageLinks },
         },
       },
     };
@@ -52,32 +55,83 @@ function saveToCache(book) {
 // Search, record the tags & param for filter as well
 export async function searchBooks({ q = "", genres = [], tags = [] } = {}) {
   try {
+    const isBestseller = tags.some((t) => t.toLowerCase() === "bestseller");
+    const otherTags = tags.filter((t) => t.toLowerCase() !== "bestseller");
+
+    const mapTag = (tag) => {
+      const lower = tag.toLowerCase();
+      if (lower === "classic") return `subject:classics`;
+      if (lower === "teen") return `subject:"young adult fiction"`;
+      return `"${tag}"`;
+    };
+
     // Build the query from every part that has a value
     const parts = [
       q.trim(),
-      ...tags.map((tag) => `"${tag}"`),
+      ...otherTags.map(mapTag),
       ...genres.map((genre) => `subject:"${genre}"`),
     ].filter(Boolean);
+
+    if (isBestseller) {
+      if (parts.length === 0) {
+        parts.push(`subject:fiction ("New York Times bestseller" OR "national bestseller" OR "bestseller")`);
+      } else {
+        parts.push(`("bestseller" OR "bestselling" OR "best seller")`);
+      }
+      parts.push(`-intitle:bestseller -intitle:bestselling -intitle:bestsellers -intitle:"best seller" -intitle:"new york times" -intitle:"book review"`);
+    }
 
     // The API requires q, so use a default for the "Recommended" list
     const query = parts.join(" ") || "subject:fiction";
 
-    const params = new URLSearchParams({
-      q: query,
-      maxResults: 40,
-      key: API_KEY,
-    });
+    const fetchItems = async (queryString) => {
+      const params = new URLSearchParams({
+        q: queryString,
+        maxResults: 40,
+        printType: "books",
+        key: API_KEY,
+      });
 
-    const response = await fetch(`${API_URL}?${params}`, {
-      method: "GET",
-    });
+      const response = await fetch(`${API_URL}?${params}`, {
+        method: "GET",
+      });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.items ?? [];
+    };
+
+    let items = await fetchItems(query);
+
+    if (isBestseller) {
+      // Exclude books that literally have "bestseller" or "best seller" in their title
+      items = items.filter((book) => {
+        const title = (book.volumeInfo?.title ?? "").toLowerCase();
+        if (/bestsell|best\s*seller/i.test(title)) return false;
+        if (!book.volumeInfo?.authors || book.volumeInfo.authors.length === 0) return false;
+        return true;
+      });
+
+      // Fallback if the strict bestseller keywords yielded no results
+      if (items.length === 0 && (q.trim() || genres.length > 0)) {
+        const fallbackParts = [
+          q.trim(),
+          ...otherTags.map(mapTag),
+          ...genres.map((genre) => `subject:"${genre}"`),
+          `-intitle:bestseller -intitle:bestselling -intitle:bestsellers -intitle:"best seller"`,
+        ].filter(Boolean);
+        items = await fetchItems(fallbackParts.join(" "));
+        items = items.filter((book) => {
+          const title = (book.volumeInfo?.title ?? "").toLowerCase();
+          return !/bestsell|best\s*seller/i.test(title);
+        });
+      }
     }
 
-    const data = await response.json();
-    return data.items ?? [];
+    return items;
   } catch (error) {
     console.error("Error searching books:", error);
     throw error;
@@ -112,7 +166,10 @@ export function sortBooks(books, sort) {
 // Get a book by its id (from the browser's memory if we have it, otherwise Google)
 export async function getBookById(bookId) {
   const saved = readCache()[bookId];
-  if (saved && Date.now() - saved.savedAt < CACHE_HOURS * 60 * 60 * 1000) {
+  if (
+    saved?.coverVersion === COVER_CACHE_VERSION &&
+    Date.now() - saved.savedAt < CACHE_HOURS * 60 * 60 * 1000
+  ) {
     return saved.book;
   }
 
@@ -135,14 +192,14 @@ export async function getBookById(bookId) {
 }
 
 
-// This function is for the cover of list. Cover links of the first few books, null where a book has no cover
+// Return the available cover sizes for each of the first few books.
 export async function getCoverLinks(bookIds, max = 4) {
   const responses = await Promise.allSettled(bookIds.slice(0, max).map(getBookById));
 
   return responses.map((response) =>
     response.status === "fulfilled"
-      ? response.value.volumeInfo.imageLinks?.thumbnail?.replace("http://", "https://") ?? null
-      : null
+      ? getBookCoverCandidates(response.value.volumeInfo?.imageLinks)
+      : []
   );
 }
 

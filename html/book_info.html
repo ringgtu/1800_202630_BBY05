@@ -11,15 +11,15 @@
     <script type="module" src="/src/backLink.js"></script>
   </head>
   <body class="position-relative m-5">
-    <a href="/html/search.html" id="back-link" class="text-reset text-decoration-none">
-      <i class="bi bi-caret-left fs-1"></i>
+    <a href="/html/search.html" id="back-link" data-back-link class="back-link d-inline-block" aria-label="Back to search">
+      <i class="bi bi-chevron-left fs-2" aria-hidden="true"></i>
     </a>
     <br />
     <br />
     <!-- Book cover -->
     <div class="d-flex justify-content-center align-items-center">
       <figure class="figure text-center">
-        <img id="cover" src="/images/image.png" class="figure-img img-fluid rounded" alt="book cover" style="width: 240px; aspect-ratio: 2 / 3; object-fit: cover" /> 
+        <img id="cover" src="/images/book.jpg" class="figure-img img-fluid rounded book-cover-image mx-auto" alt="book cover" style="width: 240px; aspect-ratio: 2 / 3" />
         <figcaption class="figure-caption">
           <div class="fw-bold text-dark fs-1" id="title">Book</div>
           <div class="text-muted fs-4" id="author">By Author</div>

@@ -1,9 +1,10 @@
 import { auth, db } from "./firebaseConfig.js";
-import { onAuthReady } from "./authentication.js";
+import { logoutUser, onAuthReady } from "./authentication.js";
 import { updateProfile } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { getBookById, getCoverLinks } from "./master.js";
 import { sortLists } from "./favorites.js";
+import { setBookCover } from "./bookCovers.js";
 
 const form = document.getElementById("profileForm");
 const fields = document.getElementById("profileFields");
@@ -34,6 +35,7 @@ const viewIdentity = document.getElementById("viewIdentity");
 const editButton = document.getElementById("editProfile");
 const cancelButton = document.getElementById("cancelEdit");
 const backButton = document.getElementById("backToProfile");
+const logoutButton = document.getElementById("logoutButton");
 
 const MAX_SHOWN_FAVORITES = 9;
 const MAX_SHOWN_LISTS = 9;
@@ -127,6 +129,17 @@ cancelButton.addEventListener("click", () => {
   fillForm(); // discard anything typed
   showMessage("");
   setMode("detail");
+});
+
+logoutButton.addEventListener("click", async () => {
+  logoutButton.disabled = true;
+  try {
+    await logoutUser();
+  } catch (error) {
+    console.error("Could not log out:", error);
+    showMessage("Could not log out. Please try again.", "danger");
+    logoutButton.disabled = false;
+  }
 });
 
 // READ: load the signed-in user's details from Firestore.
@@ -281,10 +294,7 @@ function renderFavorite(book) {
 
   const cover = card.querySelector(".favorite-cover");
   cover.alt = title;
-  const thumbnail = info.imageLinks?.thumbnail;
-  if (thumbnail) {
-    cover.src = thumbnail.replace("http://", "https://");
-  }
+  setBookCover(cover, info.imageLinks, title);
 
   return card;
 }
@@ -338,10 +348,8 @@ function renderListPreview(list, covers) {
   for (let i = 0; i < 4; i++) {
     if (covers[i]) {
       const image = document.createElement("img");
-      image.src = covers[i];
-      image.alt = "";
       image.className = "w-100 h-100";
-      image.style.objectFit = "cover";
+      setBookCover(image, covers[i], list.name);
       grid.append(image);
     } else {
       const empty = document.createElement("div");
