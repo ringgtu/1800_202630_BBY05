@@ -7,17 +7,19 @@
     <link rel="stylesheet" href="/styles/style.css" />
     <script type="module" src="/src/main.js"></script>
     <script type="module" src="/src/bookapi.js"></script>
+    <script type="module" src="/src/addToList.js"></script>
+    <script type="module" src="/src/backLink.js"></script>
   </head>
   <body class="position-relative m-5">
-    <a href="/html/search.html" class="text-reset text-decoration-none">
-      <i class="bi bi-caret-left fs-1"></i>
+    <a href="/html/search.html" id="back-link" data-back-link class="back-link d-inline-block" aria-label="Back to search">
+      <i class="bi bi-chevron-left fs-2" aria-hidden="true"></i>
     </a>
     <br />
     <br />
     <!-- Book cover -->
     <div class="d-flex justify-content-center align-items-center">
       <figure class="figure text-center">
-        <img id="cover" src="/images/image.png" class="figure-img img-fluid rounded" alt="book cover" style="width: 240px; aspect-ratio: 2 / 3; object-fit: cover" /> 
+        <img id="cover" src="/images/book.jpg" class="figure-img img-fluid rounded book-cover-image mx-auto" alt="book cover" style="width: 240px; aspect-ratio: 2 / 3" />
         <figcaption class="figure-caption">
           <div class="fw-bold text-dark fs-1" id="title">Book</div>
           <div class="text-muted fs-4" id="author">By Author</div>
@@ -28,21 +30,27 @@
     <hr />
 
     <!-- Review section -->
-    <ul class="list-group list-group-horizontal d-flex justify-content-center">
-      <li class="list-group-item">
-        <i class="bi bi-star-fill"></i>
-        <i class="bi bi-star-fill"></i>
-        <i class="bi bi-star-half"></i>
-        <i class="bi bi-star"></i>
-        <i class="bi bi-star"></i>
-        3.5
+    <ul class="list-group list-group-horizontal d-flex justify-content-center text-center user-select-none" id="reviewSummaryBar">
+      <li class="list-group-item d-flex align-items-center gap-1 justify-content-center" id="ratingItem" role="button" tabindex="0" title="View reviews">
+        <span id="starIcons" class="text-warning d-inline-flex gap-1 align-items-center">
+          <i class="bi bi-star"></i>
+          <i class="bi bi-star"></i>
+          <i class="bi bi-star"></i>
+          <i class="bi bi-star"></i>
+          <i class="bi bi-star"></i>
+        </span>
+        <span id="ratingScore" class="fw-semibold ms-1">--</span>
       </li>
-      <li class="list-group-item">47,090 ratings</li>
-      <li class="list-group-item">7,067 reviews</li>
+      <li class="list-group-item d-flex align-items-center justify-content-center" id="ratingsCountItem" role="button" tabindex="0" title="View reviews">
+        <span id="ratingsCount">-- ratings</span>
+      </li>
+      <li class="list-group-item d-flex align-items-center justify-content-center" id="reviewsCountItem" role="button" tabindex="0" title="View reviews">
+        <span id="reviewsCount">-- reviews</span>
+      </li>
     </ul>
     <hr />
     <div class="d-flex justify-content-around">
-      <button type="button" class="btn btn-secondary" id="test">Add to list</button>
+      <button type="button" class="btn btn-secondary" id="add-to-list" data-bs-toggle="modal" data-bs-target="#addToListModal">Add to list</button>
       <button type="button" class="btn btn-secondary" id="whereToBuyBtn">Where to buy</button>
     </div>
     <hr />
@@ -59,6 +67,97 @@
         <h5 class="mb-3">Where to buy</h5>
         <div id="retailerList" class="d-flex flex-column gap-2">
           <p class="text-muted small mb-0">Loading retailer options…</p>
+        </div>
+      </div>
+      <div id="reviewsSection" class="list-group-item p-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0">Reviews</h5>
+          <button type="button" class="btn btn-secondary btn-sm" id="writeReviewBtn" data-bs-toggle="modal" data-bs-target="#addReviewModal">
+            <i class="bi bi-pencil-square me-1"></i> Write a review
+          </button>
+        </div>
+        <div id="bookReviewsList" class="d-flex flex-column gap-3">
+          <p class="text-muted small mb-0" id="reviewsLoadingText">Loading reviews…</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add list popup -->
+    <div class="modal fade" id="addToListModal" tabindex="-1" aria-labelledby="addToListTitle" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title h5" id="addToListTitle">Add to list</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+
+          <div class="modal-body">
+            <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+              <p id="addToListMessage" class="mb-0" role="status" aria-live="polite"></p>
+              <button id="newListToggle" type="button" class="btn btn-secondary btn-sm flex-shrink-0" disabled>
+                <i class="bi bi-plus-lg"></i> New list
+              </button>
+            </div>
+
+            <form id="newListInline" class="input-group mb-2" hidden>
+              <input
+                type="text"
+                id="newListInlineName"
+                class="form-control"
+                placeholder="List name"
+                aria-label="List name"
+                maxlength="50"
+                required />
+              <button id="newListInlineCreate" type="submit" class="btn btn-secondary">Create</button>
+            </form>
+
+            <div id="addToListOptions" class="list-group"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add review popup modal -->
+    <div class="modal fade" id="addReviewModal" tabindex="-1" aria-labelledby="addReviewTitle" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title h5" id="addReviewTitle">Write a review</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+
+          <div class="modal-body">
+            <div id="modalAuthPrompt" class="text-center py-3" hidden>
+              <p class="mb-3 text-secondary">You must be logged in to write a review.</p>
+              <a href="/html/login.html" class="btn btn-secondary">Log in</a>
+            </div>
+
+            <form id="modalReviewForm">
+              <div class="mb-3">
+                <span class="form-label d-block fw-semibold" id="modalRatingLabel">Rating</span>
+                <div id="modalStarInput" class="d-flex gap-1 fs-3 text-warning" role="group" aria-labelledby="modalRatingLabel"></div>
+              </div>
+
+              <div class="mb-3">
+                <label for="modalCommentInput" class="form-label fw-semibold">Review</label>
+                <textarea
+                  id="modalCommentInput"
+                  class="form-control"
+                  rows="4"
+                  maxlength="2000"
+                  placeholder="Share what you thought of this book…"
+                  required
+                ></textarea>
+              </div>
+
+              <p id="modalReviewMessage" class="small mb-3" role="status" aria-live="polite"></p>
+
+              <div class="d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button id="modalSubmitReview" type="submit" class="btn btn-secondary">Submit</button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>

@@ -4,16 +4,10 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 import "/styles/style.css";
 import "./components/site-navbar.js";
 import { auth, db } from "./firebaseConfig.js";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDocs } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import Modal from "bootstrap/js/dist/modal";
-
-const palette = [
-  { c1: "#6D2432", c2: "#2E2A26", ink: "#D9B382", emoji: "📕" },
-  { c1: "#A44A3F", c2: "#6D2432", ink: "#F4ECE0", emoji: "📙" },
-  { c1: "#D9B382", c2: "#A44A3F", ink: "#2E2A26", emoji: "📒" },
-  { c1: "#2E2A26", c2: "#6D2432", ink: "#D9B382", emoji: "📓" },
-];
+import { getBookById } from "./master.js";
+import { getBookCoverCandidates, setBookCover } from "./bookCovers.js";
 
 /* Escapes HTML special characters to prevent XSS */
 const esc = (s) =>
@@ -22,116 +16,58 @@ const esc = (s) =>
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
   );
 
-/* Strips raw HTML descriptions into clean readable text */
-const plain = (html) =>
-  new DOMParser().parseFromString(html ?? "", "text/html").body.textContent.trim();
-
-const thumb = (v) =>
-  (v.imageLinks?.thumbnail ?? v.imageLinks?.smallThumbnail ?? "").replace("http://", "https://");
-
-const looksLikeIsbn = (s) => /^[\d-]{10,17}X?$/i.test(String(s).trim());
-
-/* ============ Google Books API ============ */
-
-/* Looks up a single book by Google Books Volume ID or ISBN */
-async function lookupBook(id) {
-  const clean = String(id ?? "").trim();
-  if (!clean) throw new Error("No book ID");
-  const isIsbn = looksLikeIsbn(clean);
-  const apiKey = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY;
-  const keyParam = apiKey ? `&key=${apiKey}` : "";
-  const url = isIsbn
-    ? `https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(clean.replace(/-/g, ""))}&maxResults=1${keyParam}`
-    : `https://www.googleapis.com/books/v1/volumes/${encodeURIComponent(clean)}?${keyParam.slice(1)}`;
-
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Google Books lookup failed: " + res.status);
-  const json = await res.json();
-  const item = isIsbn ? json.items?.[0] : json;
-  if (!item?.volumeInfo) throw new Error("Book not found: " + clean);
-  const v = item.volumeInfo;
-  return {
-    title: v.title ?? clean,
-    authors: (v.authors ?? []).join(", "),
-    description: plain(v.description),
-    image: thumb(v),
-  };
-}
-
-/* Searches Google Books by title, author, or ISBN */
-async function searchBooks(text) {
-  const q = text.trim();
-  const isIsbn = looksLikeIsbn(q);
-  const query = isIsbn ? `isbn:${q.replace(/-/g, "")}` : q;
-  const apiKey = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY;
-  const keyParam = apiKey ? `&key=${apiKey}` : "";
-  const res = await fetch(
-    `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=8&printType=books${keyParam}`
-  );
-  if (!res.ok) throw new Error("Search failed: " + res.status);
-  const json = await res.json();
-  return (json.items ?? [])
-    .filter((it) => it.volumeInfo)
-    .map((it) => ({
-      id: it.id,
-      title: it.volumeInfo.title ?? "Untitled",
-      authors: (it.volumeInfo.authors ?? []).join(", "),
-      image: thumb(it.volumeInfo),
-    }));
-}
-
 /* ============ Firestore ============
-   users/{uid}.book is a map of books keyed by Google Books volume ID:
-   book = { "<volumeId>": { book: "<volumeId>", "book info": "User note", added: 1700000000000 } }
+   Books live in the subcollection users/{uid}/books/{volumeId}:
+   {
+     book:     { id, title, authors: [], image, imageLinks },
+     bookInfo: { note, views, createdAt }
+   }
 */
 let books = [];
-async function loadBooks(uid) {
-  const snap = await getDoc(doc(db, "users", uid));
-  if (!snap.exists()) return [];
-  const field = snap.data().book;
-  if (!field || typeof field !== "object") return [];
 
-  const entries = [];
-  if (typeof field.book === "string" || "book info" in field) {
-    entries.push(["legacy", { book: field.book, "book info": field["book info"], added: 0 }]);
-  }
-  for (const [key, value] of Object.entries(field)) {
-    if (value && typeof value === "object") entries.push([key, value]);
-  }
-  entries.sort((a, b) => (a[1].added ?? 0) - (b[1].added ?? 0)); // oldest first
+async function loadBooks(uid) {
+  const snap = await getDocs(collection(db, "users", uid, "books"));
+
+  // Oldest first. A just-saved doc can have a null createdAt for a moment.
+  const docs = snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (a.bookInfo?.createdAt?.toMillis?.() ?? Infinity) - (b.bookInfo?.createdAt?.toMillis?.() ?? Infinity));
 
   return Promise.all(
-    entries.map(async ([key, info], i) => {
-      const bookVolumeId = info.book || key;
-      const note = info["book info"] ?? "";
-      let title = bookVolumeId,
-        authors = "",
-        description = "",
-        image = "";
-      try {
-        ({ title, authors, description, image } = await lookupBook(bookVolumeId));
-      } catch (err) {
-        console.warn(err);
+    docs.map(async (data) => {
+      const info = data.book ?? {};
+      const volumeId = info.id || data.id;
+      const title = info.title ?? "Untitled";
+      const authors = Array.isArray(info.authors) ? info.authors.join(", ") : (info.authors ?? "");
+      let coverCandidates = getBookCoverCandidates(info.imageLinks ?? info.image);
+      if (coverCandidates.length < 2) {
+        try {
+          const apiBook = await getBookById(volumeId);
+          const apiCandidates = getBookCoverCandidates(apiBook.volumeInfo?.imageLinks);
+          if (apiCandidates.length) coverCandidates = apiCandidates;
+        } catch (error) {
+          console.warn(`Could not load cover variants for book ${volumeId}:`, error);
+        }
       }
-      const short = description.length > 300 ? description.slice(0, 300).trimEnd() + "…" : description;
+      const note = data.bookInfo?.note ?? "";
+
       return {
-        ...palette[i % palette.length],
-        id: bookVolumeId,
+        id: volumeId,
         name: title,
         subtitle: authors,
-        image,
+        coverCandidates,
         page:
-          `<h2>${esc(title)}</h2>` +
-          (authors ? `<p class="small text-muted mb-2">By ${esc(authors)}</p>` : "") +
-          (short ? `<p>${esc(short)}</p>` : "") +
-          (note ? `<p class="fst-italic border-start border-2 border-secondary ps-2 my-2">${esc(note)}</p>` : "") +
-          `<div class="mt-3"><a href="/html/book_info.html?bookid=${encodeURIComponent(bookVolumeId)}" class="btn btn-sm btn-book">View Details & Retailers</a></div>`,
+          (note
+            ? `<p class="fst-italic border-start border-2 border-secondary ps-2 my-2">${esc(note)}</p>`
+            : `<p class="small text-muted">No note for this book.</p>`) +
+          `<div class="mt-3"><a href="/html/book_info.html?bookid=${encodeURIComponent(volumeId)}" class="btn btn-sm btn-book">View Details & Retailers</a></div>`,
       };
     })
   );
 }
 
 /* ============ 3D Book on the Page ============ */
+const stage = document.getElementById("stage");
 const shelf = document.getElementById("shelf");
 const book = document.getElementById("book");
 const hint = document.getElementById("hint");
@@ -139,6 +75,10 @@ const heading = document.getElementById("heading");
 const label = document.getElementById("label");
 const nextBtn = document.getElementById("next");
 const prevBtn = document.getElementById("prev");
+const controls = document.getElementById("controls");
+const reviewsContainer = document.getElementById("reviewsContainer");
+const reviewsBtn = document.getElementById("reviewsBtn");
+const deleteBtn = document.getElementById("deleteBtn");
 
 let bookIdx = 0;
 let busy = false;
@@ -149,27 +89,39 @@ function buildBook(i) {
   if (!b) return;
 
   book.classList.remove("open");
-  book.style.setProperty("--c1", b.c1);
-  book.style.setProperty("--c2", b.c2);
-  book.style.setProperty("--ink", b.ink);
   book.innerHTML = `
     <div class="base"><div class="face front">${b.page}</div></div>
     <div class="leaf">
-      <div class="face front cover">
-        <h1>${esc(b.name)}</h1>
-        <p class="mb-0">${esc(b.subtitle)}</p>
+      <div class="face front cover has-image">
+        <img class="library-cover" src="/images/book.jpg" alt="Cover of ${esc(b.name)}">
       </div>
       <div class="face back inside">
-        ${
-          b.image
-            ? `<img src="${esc(b.image)}" alt="Cover of ${esc(b.name)}">`
-            : `<div class="emoji">${b.emoji}</div>`
-        }
+        <h2>${esc(b.name)}</h2>
+        <p class="mb-0">${esc(b.subtitle)}</p>
       </div>
     </div>`;
+  setBookCover(
+    book.querySelector(".library-cover"),
+    b.coverCandidates,
+    b.name,
+    () => getBookById(b.id).then((apiBook) => apiBook.volumeInfo?.imageLinks)
+  );
 
   if (heading) heading.textContent = b.name;
   if (label) label.textContent = `Book ${i + 1} of ${books.length}`;
+
+  if (reviewsBtn) {
+    reviewsBtn.href = `./reviews.html?bookid=${encodeURIComponent(b.id)}&title=${encodeURIComponent(b.name)}&from=library`;
+  }
+
+  if (prevBtn && nextBtn) {
+    const single = books.length <= 1;
+    prevBtn.disabled = single;
+    nextBtn.disabled = single;
+    prevBtn.classList.toggle("opacity-50", single);
+    nextBtn.classList.toggle("opacity-50", single);
+  }
+
   updateHint();
 }
 
@@ -181,7 +133,7 @@ function updateHint() {
 }
 
 function switchBook(dir) {
-  if (busy || !books.length) return;
+  if (busy || books.length <= 1) return;
   busy = true;
   shelf.classList.add(dir > 0 ? "out-left" : "out-right");
   setTimeout(() => {
@@ -201,21 +153,24 @@ function switchBook(dir) {
   }, 350);
 }
 
-/* Reloads the user's books from Firestore and focuses the one with this ID */
-async function refresh(showId) {
+/* Loads the user's books from Firestore and shows the first one */
+async function refresh() {
   if (!currentUser) return;
   books = await loadBooks(currentUser.uid);
   if (!books.length) {
     book.innerHTML = "";
+    if (stage) stage.classList.add("d-none");
+    if (controls) controls.classList.add("d-none");
+    if (reviewsContainer) reviewsContainer.classList.add("d-none");
     if (heading) heading.textContent = "My Library";
     if (label) label.textContent = "";
     if (hint) hint.textContent = 'No books yet. Press "Add book" in the top right to add your first one.';
     return;
   }
-  bookIdx = Math.max(
-    0,
-    books.findIndex((b) => b.id === showId)
-  );
+  if (stage) stage.classList.remove("d-none");
+  if (controls) controls.classList.remove("d-none");
+  if (reviewsContainer) reviewsContainer.classList.remove("d-none");
+  bookIdx = 0;
   buildBook(bookIdx);
 }
 
@@ -223,7 +178,6 @@ if (nextBtn) nextBtn.addEventListener("click", () => switchBook(1));
 if (prevBtn) prevBtn.addEventListener("click", () => switchBook(-1));
 
 document.addEventListener("keydown", (e) => {
-  if (e.target.closest("input, textarea")) return; // Don't switch books while typing in the modal
   if (e.key === "ArrowRight") switchBook(1);
   if (e.key === "ArrowLeft") switchBook(-1);
 });
@@ -253,132 +207,38 @@ if (book) {
   });
 }
 
-/* ============ "Add Book" Modal ============ */
-const addModalEl = document.getElementById("addModal");
-const addModal = addModalEl ? Modal.getOrCreateInstance(addModalEl) : null;
-const searchForm = document.getElementById("searchForm");
-const searchInput = document.getElementById("searchInput");
-const searchStatus = document.getElementById("searchStatus");
-const resultsEl = document.getElementById("results");
-const noteBox = document.getElementById("noteBox");
-const noteInput = document.getElementById("noteInput");
-const saveBtn = document.getElementById("saveBtn");
-let selected = null; // Currently chosen search result
+/* ============ Delete current book ============ */
+if (deleteBtn) {
+  deleteBtn.addEventListener("click", async () => {
+    if (!currentUser || !books.length) return;
 
-function resetModal() {
-  selected = null;
-  if (searchInput) searchInput.value = "";
-  if (searchStatus) searchStatus.textContent = "";
-  if (resultsEl) resultsEl.innerHTML = "";
-  if (noteInput) noteInput.value = "";
-  if (noteBox) noteBox.classList.add("d-none");
-  if (saveBtn) saveBtn.disabled = true;
-}
+    const current = books[bookIdx];
+    if (!confirm(`Remove "${current.name}" from your library?`)) return;
 
-if (addModalEl) {
-  addModalEl.addEventListener("show.bs.modal", resetModal);
-  addModalEl.addEventListener("shown.bs.modal", () => searchInput?.focus());
-}
-
-function selectResult(item, button) {
-  resultsEl?.querySelectorAll(".active").forEach((el) => el.classList.remove("active"));
-  button.classList.add("active");
-  selected = item;
-  if (noteBox) noteBox.classList.remove("d-none");
-  if (saveBtn) saveBtn.disabled = false;
-  noteInput?.focus();
-}
-
-function renderResults(list) {
-  if (!resultsEl) return;
-  resultsEl.innerHTML = "";
-  list.forEach((item) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "list-group-item list-group-item-action d-flex gap-3 align-items-center";
-    if (item.image) {
-      const img = document.createElement("img");
-      img.src = item.image;
-      img.alt = "";
-      img.className = "result-thumb";
-      button.append(img);
-    }
-    const text = document.createElement("div");
-    const title = document.createElement("div");
-    title.className = "fw-semibold";
-    title.textContent = item.title;
-    const authors = document.createElement("div");
-    authors.className = "small text-muted";
-    authors.textContent = item.authors;
-    text.append(title, authors);
-    button.append(text);
-    button.addEventListener("click", () => selectResult(item, button));
-    resultsEl.append(button);
-  });
-}
-
-if (searchForm) {
-  searchForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const text = searchInput?.value.trim() ?? "";
-    if (!text) return;
-    selected = null;
-    if (saveBtn) saveBtn.disabled = true;
-    if (noteBox) noteBox.classList.add("d-none");
-    if (resultsEl) resultsEl.innerHTML = "";
-    if (searchStatus) searchStatus.textContent = "Searching…";
+    deleteBtn.disabled = true;
     try {
-      const list = await searchBooks(text);
-      if (searchStatus) {
-        searchStatus.textContent = list.length
-          ? "Pick a book from the list below:"
-          : "No books found. Try a different title, author or ISBN.";
-      }
-      renderResults(list);
-    } catch (err) {
-      console.error(err);
-      if (searchStatus) {
-        searchStatus.textContent = "Could not reach Google Books. Check your internet connection.";
-      }
-    }
-  });
-}
+      await deleteDoc(doc(db, "users", currentUser.uid, "books", current.id));
+      books.splice(bookIdx, 1);
 
-if (saveBtn) {
-  saveBtn.addEventListener("click", async () => {
-    if (!selected || !currentUser) return;
-    saveBtn.disabled = true;
-    saveBtn.textContent = "Saving…";
-    try {
-      // Save book under the user's document
-      await setDoc(
-        doc(db, "users", currentUser.uid),
-        {
-          book: {
-            [selected.id]: {
-              book: selected.id,
-              "book info": noteInput?.value.trim() ?? "",
-              added: Date.now(),
-            },
-          },
-        },
-        { merge: true }
-      );
-
-      addModal?.hide();
-      await refresh(selected.id);
-      setTimeout(() => {
-        book?.classList.add("open");
-        updateHint();
-      }, 400);
-    } catch (err) {
-      console.error("Could not save book:", err);
-      if (searchStatus) {
-        searchStatus.textContent = "Could not save the book. Please try again.";
+      if (!books.length) {
+        // Last book removed — hide everything
+        book.innerHTML = "";
+        if (stage) stage.classList.add("d-none");
+        if (controls) controls.classList.add("d-none");
+        if (reviewsContainer) reviewsContainer.classList.add("d-none");
+        if (heading) heading.textContent = "My Library";
+        if (label) label.textContent = "";
+        if (hint) hint.textContent = 'No books yet. Press "Add book" in the top right to add your first one.';
+      } else {
+        // Show the next book (or wrap to 0)
+        bookIdx = bookIdx % books.length;
+        buildBook(bookIdx);
       }
+    } catch (err) {
+      console.error("Could not delete book:", err);
+      alert("Could not remove the book. Please try again.");
     } finally {
-      saveBtn.disabled = false;
-      saveBtn.textContent = "Save book";
+      deleteBtn.disabled = false;
     }
   });
 }
@@ -389,6 +249,9 @@ onAuthStateChanged(auth, (user) => {
   currentUser = user;
   const addBtn = document.getElementById("addBtn");
   if (!user) {
+    if (stage) stage.classList.add("d-none");
+    if (controls) controls.classList.add("d-none");
+    if (reviewsContainer) reviewsContainer.classList.add("d-none");
     if (addBtn) addBtn.classList.add("d-none");
     if (hint) {
       hint.innerHTML = 'Please <a href="/html/login.html" class="fw-semibold text-decoration-none">log in</a> to see your library.';
@@ -398,6 +261,9 @@ onAuthStateChanged(auth, (user) => {
   if (addBtn) addBtn.classList.remove("d-none");
   refresh().catch((err) => {
     console.error("Could not load library:", err);
+    if (stage) stage.classList.add("d-none");
+    if (controls) controls.classList.add("d-none");
+    if (reviewsContainer) reviewsContainer.classList.add("d-none");
     if (hint) hint.textContent = "Could not load books. Refresh the page to try again.";
   });
 });
