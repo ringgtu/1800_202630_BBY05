@@ -6,7 +6,7 @@
     <title>Profile - Book App</title>
 
     <script type="module" src="/src/main.js"></script>
-
+    <script type="module" src="/src/backLink.js"></script>
     <script type="module" src="/src/profile.js"></script>
 
   </head>
@@ -34,10 +34,10 @@
             tabindex="0"
             aria-label="Open my profile"
           >
-            <i
-              class="bi bi-person-circle display-1 text-secondary"
-              aria-hidden="true"
-            ></i>
+            <span class="display-1 lh-1 d-inline-flex flex-shrink-0" aria-hidden="true">
+              <img id="profilePhoto" src="" alt="" class="rounded-circle border border-3 border-secondary d-block" style="width: 1em; height: 1em; object-fit: cover" hidden />
+              <i id="profileIcon" class="bi bi-person-circle text-secondary d-block"></i>
+            </span>
 
             <div>
               <h1 id="profileName" class="h4">My profile</h1>
@@ -116,6 +116,15 @@
                 maxlength="60"
                 required
               />
+            </div>
+
+            <div class="mb-3">
+              <label for="photoInput" class="form-label">Profile picture</label>
+              <input type="file" id="photoInput" class="form-control" accept="image/*" />
+              <button id="removePhoto" type="button" class="btn btn-link btn-sm px-0" hidden>
+                Remove picture
+              </button>
+              <div class="form-text">Any photo works. It is cropped to a small square.</div>
             </div>
 
             <button id="saveProfile" type="submit" class="btn btn-primary">

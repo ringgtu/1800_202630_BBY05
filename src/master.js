@@ -252,7 +252,7 @@ function shuffle(list) {
 // myGenre = the user's "My genre" text in profile. Returns the books and
 // matchedGenre, which is the user's genre if the books came from it, otherwise "".
 export async function getRecommendedBooks(myGenre = "", count = 4) {
-  // "Mystery, Fantasy" -> pick one of them each time
+  
   const mine = myGenre.split(",").map((genre) => genre.trim()).filter(Boolean);
 
   const attempts = [];
