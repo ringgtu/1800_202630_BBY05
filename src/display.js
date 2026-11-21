@@ -3,8 +3,8 @@
 // the info and replace it. After the user do the action, 
 import { doc, setDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { db } from "./firebaseConfig.js"; 
-import { getBookById, searchBooks, sortBooks, getTags } from "./master.js";
-import { getCurrentUser, getFavorites } from "./favorites.js";
+import { searchBooks, sortBooks, getRecommendedBooks, getTags, getBookById } from "./master.js";
+import { getCurrentUser, getUserData } from "./favorites.js";
 import { setBookCover } from "./bookCovers.js";
 
 const params = new URLSearchParams(window.location.search);
@@ -47,9 +47,15 @@ document.querySelectorAll("[data-keep-params]").forEach((link) => {
 
 let currentUser = null;
 let favorites = [];
+let myGenre = "";
 try {
   currentUser = await getCurrentUser();
-  favorites = currentUser ? await getFavorites(currentUser.uid) : [];
+
+  if (currentUser) {
+    const data = await getUserData(currentUser.uid); 
+    favorites = data.favorites ?? [];
+    myGenre = (data.identity ?? "").trim(); 
+  }
 } catch (error) {
   console.error("Error loading favorites:", error);
 }
@@ -148,17 +154,6 @@ function renderBook(book) {
 }
 
 
-// There will be 4 recommended book appear on search.html, if the user refresh the page it will provide random 4 book cards
-// I did some research and found Fisher-Yates shuffle, returns a randomly ordered copy of the array
-function shuffle(list) {
-  const copy = [...list];
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
-}
-
 // Display sort option
 function buildHeading(count) {
   const picked = [...genres, ...tags];
@@ -170,19 +165,22 @@ function buildHeading(count) {
 }
 
 try {
-  const books = sortBooks(await searchBooks({ q, genres, tags }), sort);
-  const isSearching = q || sort || genres.length > 0 || tags.length > 0; // Check Search/Sort/Filter 
+  const isSearching = q || sort || genres.length > 0 || tags.length > 0;
 
   if (isSearching) {
-    // After Action
+    // After search / sort / filter
+    const books = sortBooks(await searchBooks({ q, genres, tags }), sort);
+
     heading.textContent = books.length
-      ? buildHeading(books.length)         
+      ? buildHeading(books.length)
       : "No books found. Try fewer filters.";
     results.replaceChildren(...books.map(renderBook));
   } else {
-    // Before action
-    heading.textContent = "Recommended Books:";
-    results.replaceChildren(...shuffle(books).slice(0, 4).map(renderBook));
+    // Before any action: display 4 random books from My genre when it is set
+    const { books, matchedGenre } = await getRecommendedBooks(myGenre);
+
+    heading.textContent = matchedGenre ? `Recommended for you: ${matchedGenre}` : "Recommended:";
+    results.replaceChildren(...books.map(renderBook));
   }
 } catch (error) {
   console.error("Error loading books:", error);

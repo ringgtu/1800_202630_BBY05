@@ -31,7 +31,7 @@ const profileView = document.getElementById("profileView");
 const profileExtras = document.getElementById("profileExtras");
 const viewName = document.getElementById("viewName");
 const viewCountry = document.getElementById("viewCountry");
-const viewIdentity = document.getElementById("viewIdentity");
+const viewGenre = document.getElementById("viewGenre");
 const editButton = document.getElementById("editProfile");
 const cancelButton = document.getElementById("cancelEdit");
 const backButton = document.getElementById("backToProfile");
@@ -80,7 +80,7 @@ function renderView() {
   heading.textContent = savedData.name || "My profile";
   viewName.textContent = savedData.name || "—";
   viewCountry.textContent = savedData.country || "—";
-  viewIdentity.textContent = savedData.identity || "—";
+  viewGenre.textContent = savedData.identity || "—";
 }
 
 // Put the saved details into the form inputs.
@@ -174,7 +174,7 @@ onAuthReady(async (user) => {
     savedData = {
       name: profile.name ?? user.displayName ?? "",
       country: profile.country ?? "",
-      identity: profile.identity ?? "BookLover",
+      identity: profile.identity ?? "",
     };
 
     renderView();
@@ -346,7 +346,7 @@ function renderListPreview(list, covers) {
   // 2x2 picture: a cover where we have one, a plain square where we don't
   const grid = card.querySelector(".list-covers");
   for (let i = 0; i < 4; i++) {
-    if (covers[i]) {
+    if (covers[i]?.length) {
       const image = document.createElement("img");
       image.className = "w-100 h-100";
       setBookCover(image, covers[i], list.name);
