@@ -54,7 +54,7 @@ try {
   if (currentUser) {
     const data = await getUserData(currentUser.uid); 
     favorites = data.favorites ?? [];
-    myGenre = (data.identity ?? "").trim(); 
+    myGenre = (data.genre || data.identity || "").trim(); 
   }
 } catch (error) {
   console.error("Error loading favorites:", error);

@@ -251,7 +251,7 @@ onAuthReady(async (user) => {
     savedData = {
       name: profile.name ?? user.displayName ?? "",
       country: profile.country ?? "",
-      identity: profile.identity ?? "",
+      identity: profile.genre || profile.identity || "",
       photo: profile.photo ?? "",
     };
 
@@ -306,7 +306,9 @@ form.addEventListener("submit", async (event) => {
     const userRef = doc(db, "users", user.uid);
 
     // Merge preserves other fields already in this document.
-    const update = { name, country, identity, email: user.email || "" };
+    const update = { name, country, genre: identity, email: user.email || "" };
+    
+    update.identity = deleteField();
 
     // Only touch the photo when the user changed it
     if (pendingPhoto === "") update.photo = deleteField();
