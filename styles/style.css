@@ -533,6 +533,44 @@ main h2 {
     --ph: calc(var(--pw) * 1.4);
   }
 
+  .library-page .library-header {
+    padding-right: 4.75rem !important;
+    padding-left: 1rem !important;
+    text-align: left !important;
+  }
+
+  .library-page .library-title-row {
+    flex-wrap: wrap;
+    justify-content: flex-start !important;
+    align-items: flex-start !important;
+    column-gap: 0.5rem !important;
+  }
+
+  .library-page #heading {
+    flex: 0 0 calc(100% - 2.5rem);
+    min-width: 0;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+
+  .library-page #hint {
+    display: block;
+    width: calc(100% - 2.5rem);
+    margin-right: auto;
+    text-align: center;
+  }
+
+  .library-page #favBtn {
+    display: flex;
+    width: 2rem;
+    height: 2rem;
+    flex: 0 0 2rem;
+    align-items: center;
+    justify-content: center;
+    align-self: flex-start;
+    margin-top: 0.15rem;
+  }
+
   .library-page .book.open {
     transform: scale(0.78);
   }
