@@ -1,7 +1,7 @@
 import { auth, db } from "./firebaseConfig.js";
 import { logoutUser, onAuthReady } from "./authentication.js";
 import { updateProfile } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteField } from "firebase/firestore";
 import { getBookById, getCoverLinks } from "./master.js";
 import { sortLists } from "./favorites.js";
 import { setBookCover } from "./bookCovers.js";
@@ -31,11 +31,15 @@ const profileView = document.getElementById("profileView");
 const profileExtras = document.getElementById("profileExtras");
 const viewName = document.getElementById("viewName");
 const viewCountry = document.getElementById("viewCountry");
-const viewIdentity = document.getElementById("viewIdentity");
+const viewGenre = document.getElementById("viewGenre");
 const editButton = document.getElementById("editProfile");
 const cancelButton = document.getElementById("cancelEdit");
 const backButton = document.getElementById("backToProfile");
 const logoutButton = document.getElementById("logoutButton");
+const profilePhoto = document.getElementById("profilePhoto");
+const profileIcon = document.getElementById("profileIcon");
+const photoInput = document.getElementById("photoInput");
+const removePhotoButton = document.getElementById("removePhoto");
 
 const MAX_SHOWN_FAVORITES = 9;
 const MAX_SHOWN_LISTS = 9;
@@ -47,7 +51,10 @@ let saving = false;
 let mode = "overview";
 
 // The last saved details. Used to fill the form and to undo on Cancel.
-let savedData = { name: "", country: "", identity: "" };
+let savedData = { name: "", country: "", identity: "", photo: "" };
+
+// A photo chosen in the edit form but not saved yet
+let pendingPhoto = undefined;
 
 // Show feedback underneath the profile card.
 function showMessage(text, colour = "secondary") {
@@ -75,12 +82,78 @@ function setMode(newMode) {
   profileCard.style.cursor = overview && loaded ? "pointer" : "default";
 }
 
+// Show the photo, or the person icon when there is none
+function showPhoto(dataUrl) {
+  profilePhoto.classList.toggle("d-none", !dataUrl); 
+  profileIcon.classList.toggle("d-none", Boolean(dataUrl)); 
+
+  if (dataUrl) {
+    profilePhoto.src = dataUrl;
+  } else {
+    profilePhoto.removeAttribute("src"); 
+  }
+}
+
+// "Remove picture" only appears when there is a picture to remove
+function updatePhotoControls() {
+  const current = pendingPhoto !== undefined ? pendingPhoto : savedData.photo;
+  removePhotoButton.hidden = !current;
+}
+
+// Crop the middle square of the image and shrink it to size x size pixels
+async function resizeToSquare(file, size = 200) {
+  const bitmap = await createImageBitmap(file);
+  const side = Math.min(bitmap.width, bitmap.height);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  canvas
+    .getContext("2d")
+    .drawImage(bitmap, (bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side, 0, 0, size, size);
+  bitmap.close?.();
+
+  return canvas.toDataURL("image/jpeg", 0.85);
+}
+
+// A file was chosen: resize it and preview it right away
+photoInput.addEventListener("change", async () => {
+  const file = photoInput.files[0];
+  if (!file) return;
+
+  if (!file.type.startsWith("image/")) {
+    photoInput.value = "";
+    showMessage("Please choose an image file.", "danger");
+    return;
+  }
+
+  try {
+    pendingPhoto = await resizeToSquare(file);
+    showPhoto(pendingPhoto);
+    updatePhotoControls();
+    showMessage("");
+  } catch (error) {
+    console.error("Could not read the image:", error);
+    photoInput.value = "";
+    showMessage("Could not read that image. Try a JPG or PNG.", "danger");
+  }
+});
+
+// Remove picture
+removePhotoButton.addEventListener("click", () => {
+  pendingPhoto = "";
+  photoInput.value = "";
+  showPhoto("");
+  updatePhotoControls();
+});
+
 // Show the saved details as plain text.
 function renderView() {
   heading.textContent = savedData.name || "My profile";
   viewName.textContent = savedData.name || "—";
   viewCountry.textContent = savedData.country || "—";
-  viewIdentity.textContent = savedData.identity || "—";
+  viewGenre.textContent = savedData.identity || "—";
+  showPhoto(savedData.photo)
 }
 
 // Put the saved details into the form inputs.
@@ -88,6 +161,10 @@ function fillForm() {
   nameInput.value = savedData.name;
   countryInput.value = savedData.country;
   identityInput.value = savedData.identity;
+  pendingPhoto = undefined;     
+  photoInput.value = "";        
+  showPhoto(savedData.photo);     
+  updatePhotoControls();         
 }
 
 // Profile page -> full profile
@@ -174,7 +251,8 @@ onAuthReady(async (user) => {
     savedData = {
       name: profile.name ?? user.displayName ?? "",
       country: profile.country ?? "",
-      identity: profile.identity ?? "BookLover",
+      identity: profile.genre || profile.identity || "",
+      photo: profile.photo ?? "",
     };
 
     renderView();
@@ -228,21 +306,26 @@ form.addEventListener("submit", async (event) => {
     const userRef = doc(db, "users", user.uid);
 
     // Merge preserves other fields already in this document.
-    await setDoc(
-      userRef,
-      {
-        name,
-        country,
-        identity,
-        email: user.email || "",
-      },
-      { merge: true }
-    );
+    const update = { name, country, genre: identity, email: user.email || "" };
+    
+    update.identity = deleteField();
+
+    // Only touch the photo when the user changed it
+    if (pendingPhoto === "") update.photo = deleteField();
+    else if (pendingPhoto) update.photo = pendingPhoto;
+
+    await setDoc(userRef, update, { merge: true });
 
     if (auth.currentUser?.uid !== user.uid) return;
 
     // Update the saved data, then return to the full profile.
-    savedData = { name, country, identity };
+    savedData = {
+      name,
+      country,
+      identity,
+      photo: pendingPhoto === undefined ? savedData.photo : pendingPhoto,
+    };
+    pendingPhoto = undefined;
     renderView();
     setMode("detail");
 
@@ -346,7 +429,7 @@ function renderListPreview(list, covers) {
   // 2x2 picture: a cover where we have one, a plain square where we don't
   const grid = card.querySelector(".list-covers");
   for (let i = 0; i < 4; i++) {
-    if (covers[i]) {
+    if (covers[i]?.length) {
       const image = document.createElement("img");
       image.className = "w-100 h-100";
       setBookCover(image, covers[i], list.name);

@@ -8,10 +8,15 @@
     <script type="module" src="/src/library.js"></script>
   </head>
   <body>
-    <div class="container text-center py-3 px-5">
+  <div class="container text-center py-3 px-5">
+    <div class="d-flex justify-content-center align-items-center gap-2">
       <h1 class="h4 mb-0" id="heading" style="color: var(--primary)">My Library</h1>
-      <small class="opacity-75" id="hint"></small>
+      <button id="favBtn" type="button" class="btn btn-link text-body p-0 fs-4 d-none" aria-label="Add to favorites" aria-pressed="false">
+        <i class="bi bi-heart"></i>
+      </button>
     </div>
+    <small class="opacity-75" id="hint"></small>
+  </div>
 
     <!-- 3D Book Stage -->
     <div class="stage d-none" id="stage">
