@@ -8,7 +8,7 @@ import { auth, db } from "./firebaseConfig.js";
 import { collection, deleteDoc, doc, getDocs, setDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { getBookById } from "./master.js";
-import { getBookCoverCandidates, setBookCover } from "./bookCovers.js";
+import { setBookCover } from "./bookCovers.js";
 import { getUserData } from "./favorites.js";
 
 /* Escapes HTML special characters to prevent XSS */
@@ -43,12 +43,13 @@ async function loadBooks(uid) {
       const volumeId = info.id || data.id;
       const title = info.title ?? "Untitled";
       const authors = Array.isArray(info.authors) ? info.authors.join(", ") : (info.authors ?? "");
-      let coverCandidates = getBookCoverCandidates(info.imageLinks ?? info.image);
-      if (coverCandidates.length < 2) {
+      let coverImageLinks = info.imageLinks ?? info.image;
+      if (!coverImageLinks?.extraLarge) {
         try {
           const apiBook = await getBookById(volumeId);
-          const apiCandidates = getBookCoverCandidates(apiBook.volumeInfo?.imageLinks);
-          if (apiCandidates.length) coverCandidates = apiCandidates;
+          if (apiBook.volumeInfo?.imageLinks) {
+            coverImageLinks = apiBook.volumeInfo.imageLinks;
+          }
         } catch (error) {
           console.warn(`Could not load cover variants for book ${volumeId}:`, error);
         }
@@ -59,7 +60,7 @@ async function loadBooks(uid) {
         id: volumeId,
         name: title,
         subtitle: authors,
-        coverCandidates,
+        coverImageLinks,
         page:
           (note
             ? `<p class="fst-italic border-start border-2 border-secondary ps-2 my-2">${esc(note)}</p>`
@@ -119,7 +120,7 @@ function buildBook(i) {
         <p class="mb-0">${esc(b.subtitle)}</p>
       </div>
     </div>`;
-  setBookCover(book.querySelector(".library-cover"), b.coverCandidates, b.name, () =>
+  setBookCover(book.querySelector(".library-cover"), b.coverImageLinks, b.name, () =>
     getBookById(b.id).then((apiBook) => apiBook.volumeInfo?.imageLinks),
   );
 
