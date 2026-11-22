@@ -1,9 +1,8 @@
-
-# Elmo Hikes
+# Book Organization App
 
 ## Overview
 
-Elmo Hikes is a client-side JavaScript web application that helps users discover and explore hiking trails. The app displays a curated list of hike trails, each with details such as name, location, difficulty, and an image. Users can browse the list and mark their favorite trails for easy access later.
+**Book Organization App** is a responsive web application designed to help book lovers discover, track, and organize their personal reading collections in one place. Users can search for books via the Google Books API, view detailed book info, write and read reviews, curate custom reading lists, manage a favorites collection, and interact with a simulated 3D digital personal library.
 
 Developed for the COMP 1800 course, this project applies User-Centred Design practices and agile project management, and demonstrates integration with Firebase backend services for storing user favorites.
 
@@ -11,52 +10,97 @@ Developed for the COMP 1800 course, this project applies User-Centred Design pra
 
 ## Features
 
-- Browse a list of curated hiking trails with images and details
-- Mark and unmark trails as favorites
-- View a personalized list of favorite hikes
-- Responsive design for desktop and mobile
+- **Google Books Search & Filtering**: Search millions of titles, sort by popularity or release date, and filter by genres and tags.
+- **Detailed Book Profiles**: View book covers, authors, descriptions, page counts, publishers, release years, and retail/preview links.
+- **Interactive 3D Digital Library**: Flip through personal saved books on an animated 3D bookshelf complete with interactive page-turning and custom reading notes.
+- **Custom Lists & Collections**: Create, manage, and delete personalized book lists (e.g., "Want to Read", "Completed", or custom collections).
+- **Reviews & Community Ratings**: Write star ratings and detailed reviews for any book, browse reviews written by others, and manage your past submissions.
+- **Favorites**: Quickly favorite books with heart toggles and manage your saved collection from your profile.
+- **User Authentication & Profile**: Secure sign-up and login powered by Firebase Authentication with customizable user avatars and reading preferences.
+- **Responsive Design**: Mobile-friendly navigation, touch gestures (swiping through library books), and desktop responsiveness built with Bootstrap 5.
 
 ---
 
 ## Technologies Used
 
 - **Frontend**: HTML, CSS, JavaScript
+- **Framework & UI**: [Bootstrap 5](https://getbootstrap.com/), [Bootstrap Icons](https://icons.getbootstrap.com/), Popper.js
+- **External API**: [Google Books API](https://developers.google.com/books)
+- **Backend & Database**: [Firebase Authentication](https://firebase.google.com/docs/auth) and [Cloud Firestore](https://firebase.google.com/docs/firestore)
 - **Build Tool**: [Vite](https://vitejs.dev/)
-- **Backend**: Firebase for hosting
-- **Database**: Firestore
 
 ---
 
 ## Usage
 
-To run the application locally:
+### Local Development Setup
 
-1.  **Clone** the repository.
-2.  **Install dependencies** by running `npm install` in the project root directory.
-3.  **Start the development server** by running the command: `npm run dev`.
-4.  Open your browser and visit the local address shown in your terminal (usually `http://localhost:5173` or similar).
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/ringgtu/1800_202630_BBY05.git
+   cd 1800_202630_BBY05
+   ```
 
-Once the application is running:
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-1.  Browse the list of hiking trails displayed on the main page.
-2.  Click the heart icon (or similar) to mark a trail as a favorite.
-3.  View your favorite hikes in the favorites section.
+3. **Configure Environment Variables:**
+   Create a `.env` file in the project root (refer to `.env.example` if available) with your Firebase credentials and Google Books API key:
+   ```env
+   VITE_FIREBASE_API_KEY="YOUR_FIREBASE_API_KEY"
+   VITE_FIREBASE_AUTH_DOMAIN="YOUR_PROJECT_ID.firebaseapp.com"
+   VITE_FIREBASE_PROJECT_ID="YOUR_PROJECT_ID"
+   VITE_FIREBASE_APP_ID="YOUR_FIREBASE_APP_ID"
+   VITE_GOOGLE_BOOKS_API_KEY="YOUR_GOOGLE_BOOKS_API_KEY"
+   ```
+
+4. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+
+5. **Open in browser:**
+   Navigate to the local address displayed in the terminal (usually `http://localhost:5173/`).
 
 ---
 
 ## Project Structure
 
 ```
-elmo-hikes/
-├── src/
-│   ├── main.js
-├── styles/
+1800_202630_BBY05/
+├── html/                      # Application HTML pages
+│   ├── add_review.html        # Write & submit book reviews
+│   ├── addbook.html           # Search and add books to personal library
+│   ├── book_info.html         # Detailed book information & retailer links
+│   ├── favorite_list.html     # User's saved favorites
+│   ├── filter.html            # Category & genre filters
+│   ├── filtered.html          # Filtered search results
+│   ├── library.html           # 3D interactive personal bookshelf
+│   ├── lists.html             # Custom user reading lists
+│   ├── login.html             # User authentication (Login / Sign up)
+│   ├── profile.html           # User profile & avatar management
+│   ├── review_detail.html     # Full view of an individual review
+│   ├── reviews.html           # Book reviews listing
+│   ├── search.html            # Search results display
+│   └── sort.html              # Sort options for search
+├── images/                    # Static image assets & app badges
+├── src/                       # Application JavaScript logic
+│   ├── components/            # Reusable Web Components (e.g. site-navbar)
+│   ├── authentication.js      # Auth state and login handlers
+│   ├── bookCovers.js          # Book cover resolution & aspect ratio fallbacks
+│   ├── bookapi.js             # Google Books API integration
+│   ├── firebaseConfig.js      # Firebase & Firestore initialization
+│   ├── library.js             # 3D library interactions & Firestore books sync
+│   ├── lists.js               # User lists management
+│   ├── master.js              # Shared utility & API helper functions
+│   └── profile.js             # Profile page logic
+├── styles/                    # Stylesheets & CSS variables
 │   └── style.css
-├── public/
-├── images/
-├── index.html
-├── package.json
-├── README.md
+├── index.html                 # Landing / Home page
+├── package.json               # Project scripts & dependencies
+└── README.md
 ```
 
 ---
@@ -78,33 +122,11 @@ elmo-hikes/
 
 ## Acknowledgments
 
-- Trail data and images are for demonstration purposes only.
-- Code snippets were adapted from resources such as [Stack Overflow](https://stackoverflow.com/) and [MDN Web Docs](https://developer.mozilla.org/).
-- Icons sourced from [FontAwesome](https://fontawesome.com/) and images from [Unsplash](https://unsplash.com/).
-
----
-
-## Limitations and Future Work
-
-### Limitations
-
-- Limited trail details (e.g., no live trail conditions).
-- Accessibility features can be further improved.
-
-### Future Work
-
-- Implement map view and trailhead directions.
-- Add filtering and sorting options (e.g., by difficulty, distance).
-- Create a dark mode for better usability in low-light conditions.
+- Book data and metadata provided by the [Google Books API](https://developers.google.com/books).
+- Icons provided by [Bootstrap Icons](https://icons.getbootstrap.com/).
 
 ---
 
 ## License
 
-This project is licensed under the MIT License. See the LICENSE file for details.s
-
-
-this is just a test for luka for me to understand
-
-This is a test for tyki
-
+This project is licensed under the MIT License. See the LICENSE file for details.
