@@ -1,4 +1,4 @@
-import { doc, setDoc, serverTimestamp } from "firebase/firestore"; 
+import { doc, setDoc, serverTimestamp, deleteField } from "firebase/firestore";
 import { db } from "./firebaseConfig.js";
 import { getCoverLinks } from "./master.js"; 
 import { getCurrentUser, getUserData, sortLists } from "./favorites.js"; 
@@ -21,8 +21,35 @@ function formatDate(timestamp) {
   return date.toLocaleDateString("en-CA");
 }
 
+async function deleteList(card, listId, name, button) {
+  if (!confirm(`Delete "${name}"? This can't be undone.`)) return;
+
+  button.disabled = true;
+
+  try {
+    await setDoc(
+      doc(db, "users", currentUser.uid),
+      { myList: { [listId]: deleteField() } }, // removes only this list
+      { merge: true }
+    );
+
+    card.remove();
+    usedNames.delete(name.toLowerCase()); // the name can be used again
+
+    // Only the Favorites card left? Show the empty message
+    message.textContent =
+      listsBox.children.length <= 1
+        ? "No lists yet. Select New list to make one."
+        : `Deleted "${name}".`;
+  } catch (error) {
+    console.error("Error deleting list:", error);
+    message.textContent = "Could not delete the list. Please try again.";
+    button.disabled = false;
+  }
+}
+
 // Build one list card
-function renderList({ name, href, note, count, covers }) {
+function renderList({ id, name, href, note, count, covers }) {
   const card = template.content.firstElementChild.cloneNode(true);
 
   const link = card.querySelector(".list-name");
@@ -31,6 +58,13 @@ function renderList({ name, href, note, count, covers }) {
 
   card.querySelector(".list-updated").textContent = note;
   card.querySelector(".list-count").textContent = `${count} ${count === 1 ? "book" : "books"}`;
+
+  const deleteButton = card.querySelector(".list-delete");
+  if (!id) {
+    deleteButton.remove();
+  } else {
+    deleteButton.addEventListener("click", () => deleteList(card, id, name, deleteButton));
+  }
 
   // The 2x2 picture: a cover where we have one, a plain square where we don't
   const grid = card.querySelector(".list-covers");
@@ -63,6 +97,7 @@ async function showLists() {
       // Favorites always first
       { name: "Favorites", href: "favorite_list.html", note: "Default list", books: favoriteIds },
         ...lists.map((list) => ({
+        id: list.id,
         name: list.name,
         href: `favorite_list.html?list=${list.id}`,
         note: `Last updated: ${formatDate(list.updatedAt)}`, 

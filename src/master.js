@@ -10,6 +10,12 @@ const CACHE_HOURS = 24;
 const COVER_CACHE_VERSION = 2;
 const pending = new Map(); 
 
+const RANDOM_GENRES = [
+  "Fiction", "Fantasy", "Mystery", "Romance", "Science Fiction", "Thriller",
+  "Horror", "Adventure", "Classics", "Young Adult", "History", "Biography",
+  "Philosophy", "Psychology", "Science", "Poetry", "Humor", "Travel", "Art", "Cooking",
+];
+
 function readCache() {
   try {
     return JSON.parse(localStorage.getItem(CACHE_KEY)) ?? {};
@@ -53,7 +59,7 @@ function saveToCache(book) {
 }
 
 // Search, record the tags & param for filter as well
-export async function searchBooks({ q = "", genres = [], tags = [] } = {}) {
+export async function searchBooks({ q = "", genres = [], tags = [], startIndex = 0 } = {}) {
   try {
     const isBestseller = tags.some((t) => t.toLowerCase() === "bestseller");
     const otherTags = tags.filter((t) => t.toLowerCase() !== "bestseller");
@@ -88,7 +94,7 @@ export async function searchBooks({ q = "", genres = [], tags = [] } = {}) {
       const params = new URLSearchParams({
         q: queryString,
         maxResults: 40,
-        printType: "books",
+        startIndex, 
         key: API_KEY,
       });
 
@@ -222,4 +228,52 @@ export function getTags(book, picked = [], max = 3) {
       return true;
     })
     .slice(0, max);
+}
+
+
+// Recommended books based on the genres user choose on profile
+
+
+function pickRandom(list) {
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+
+function shuffle(list) {
+  const copy = [...list];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+
+// myGenre = the user's "My genre" text in profile. Returns the books and
+// matchedGenre, which is the user's genre if the books came from it, otherwise "".
+export async function getRecommendedBooks(myGenre = "", count = 4) {
+  
+  const mine = myGenre.split(",").map((genre) => genre.trim()).filter(Boolean);
+
+  const attempts = [];
+  if (mine.length) attempts.push({ subject: pickRandom(mine), isMine: true });
+  attempts.push({ subject: pickRandom(RANDOM_GENRES), isMine: false }); // fallback
+
+  for (const { subject, isMine } of attempts) {
+    // Start at a random page: result 0, 40, 80, 120 or 160. If that page is empty, try the first page.
+    const randomStart = Math.floor(Math.random() * 5) * 40;
+
+    for (const startIndex of new Set([randomStart, 0])) {
+      const found = await searchBooks({ genres: [subject], startIndex });
+
+      // Only books with a cover, so the cards don't show the placeholder image
+      const books = found.filter((book) => book.volumeInfo.imageLinks?.thumbnail);
+
+      if (books.length >= count) {
+        return { books: shuffle(books).slice(0, count), matchedGenre: isMine ? subject : "" };
+      }
+    }
+  }
+
+  return { books: [], matchedGenre: "" };
 }

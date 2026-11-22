@@ -68,7 +68,7 @@ export async function signupUser(name, email, password) {
       name: name,
       email: email,
       country: "Canada", // Default value
-      identity: "BookLover", // Default value
+      genre: "", // Default value
     });
     console.log("Firestore user document created successfully!");
   } catch (error) {

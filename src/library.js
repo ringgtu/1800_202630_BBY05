@@ -4,10 +4,11 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 import "/styles/style.css";
 import "./components/site-navbar.js";
 import { auth, db } from "./firebaseConfig.js";
-import { collection, deleteDoc, doc, getDocs } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDocs, setDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { getBookById } from "./master.js";
 import { getBookCoverCandidates, setBookCover } from "./bookCovers.js";
+import { getUserData } from "./favorites.js";
 
 /* Escapes HTML special characters to prevent XSS */
 const esc = (s) =>
@@ -15,6 +16,7 @@ const esc = (s) =>
     /[&<>"']/g,
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
   );
+
 
 /* ============ Firestore ============
    Books live in the subcollection users/{uid}/books/{volumeId}:
@@ -79,10 +81,27 @@ const controls = document.getElementById("controls");
 const reviewsContainer = document.getElementById("reviewsContainer");
 const reviewsBtn = document.getElementById("reviewsBtn");
 const deleteBtn = document.getElementById("deleteBtn");
+const favBtn = document.getElementById("favBtn");
 
 let bookIdx = 0;
 let busy = false;
 let currentUser = null;
+let favorites = [];
+
+
+function updateFavButton() {
+  if (!favBtn) return;
+
+  const current = books[bookIdx];
+  favBtn.classList.toggle("d-none", !current); // hidden when the library is empty
+  if (!current) return;
+
+  const isFav = favorites.includes(current.id);
+  favBtn.querySelector("i").className = isFav ? "bi bi-heart-fill" : "bi bi-heart";
+  favBtn.setAttribute("aria-pressed", String(isFav));
+  favBtn.setAttribute("aria-label", isFav ? "Remove from favorites" : "Add to favorites");
+}
+
 
 function buildBook(i) {
   const b = books[i];
@@ -123,6 +142,7 @@ function buildBook(i) {
   }
 
   updateHint();
+  updateFavButton();
 }
 
 function updateHint() {
@@ -156,9 +176,18 @@ function switchBook(dir) {
 /* Loads the user's books from Firestore and shows the first one */
 async function refresh() {
   if (!currentUser) return;
+
+  try {
+    favorites = (await getUserData(currentUser.uid)).favorites ?? [];
+  } catch (error) {
+    console.error("Could not load favorites:", error);
+    favorites = [];
+  }
+
   books = await loadBooks(currentUser.uid);
   if (!books.length) {
     book.innerHTML = "";
+    updateFavButton();
     if (stage) stage.classList.add("d-none");
     if (controls) controls.classList.add("d-none");
     if (reviewsContainer) reviewsContainer.classList.add("d-none");
@@ -207,6 +236,36 @@ if (book) {
   });
 }
 
+if (favBtn) {
+  favBtn.addEventListener("click", async () => {
+    const current = books[bookIdx];
+    if (!currentUser || !current) return;
+
+    const wasFav = favorites.includes(current.id);
+
+    // Update the screen 
+    favorites = wasFav
+      ? favorites.filter((id) => id !== current.id)
+      : [...favorites, current.id];
+    updateFavButton();
+
+    try {
+      await setDoc(
+        doc(db, "users", currentUser.uid),
+        { favorites: wasFav ? arrayRemove(current.id) : arrayUnion(current.id) },
+        { merge: true }
+      );
+    } catch (error) {
+      console.error("Error saving favorite:", error);
+
+      favorites = wasFav
+        ? [...favorites, current.id]
+        : favorites.filter((id) => id !== current.id);
+      updateFavButton();
+    }
+  });
+}
+
 /* ============ Delete current book ============ */
 if (deleteBtn) {
   deleteBtn.addEventListener("click", async () => {
@@ -223,6 +282,7 @@ if (deleteBtn) {
       if (!books.length) {
         // Last book removed — hide everything
         book.innerHTML = "";
+        updateFavButton();
         if (stage) stage.classList.add("d-none");
         if (controls) controls.classList.add("d-none");
         if (reviewsContainer) reviewsContainer.classList.add("d-none");
