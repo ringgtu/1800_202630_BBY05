@@ -3,9 +3,9 @@ import "bootstrap";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import "/styles/style.css";
 import "./components/site-navbar.js";
-import { auth, db } from "./firebaseConfig.js";
+import { db } from "./firebaseConfig.js";
 import { collection, deleteDoc, doc, getDocs } from "firebase/firestore";
-import { onAuthStateChanged } from "firebase/auth";
+import { requireAuth } from "./authentication.js";
 import { getBookById } from "./master.js";
 import { getBookCoverCandidates, setBookCover } from "./bookCovers.js";
 
@@ -245,19 +245,9 @@ if (deleteBtn) {
 
 /* ============ Auth State Listener ============ */
 if (hint) hint.textContent = "Loading books…";
-onAuthStateChanged(auth, (user) => {
+requireAuth((user) => {
   currentUser = user;
   const addBtn = document.getElementById("addBtn");
-  if (!user) {
-    if (stage) stage.classList.add("d-none");
-    if (controls) controls.classList.add("d-none");
-    if (reviewsContainer) reviewsContainer.classList.add("d-none");
-    if (addBtn) addBtn.classList.add("d-none");
-    if (hint) {
-      hint.innerHTML = 'Please <a href="/html/login.html" class="fw-semibold text-decoration-none">log in</a> to see your library.';
-    }
-    return;
-  }
   if (addBtn) addBtn.classList.remove("d-none");
   refresh().catch((err) => {
     console.error("Could not load library:", err);
