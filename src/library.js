@@ -3,20 +3,20 @@ import "bootstrap";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import "/styles/style.css";
 import "./components/site-navbar.js";
+import { requireAuth } from "./authentication.js";
 import { auth, db } from "./firebaseConfig.js";
 import { collection, deleteDoc, doc, getDocs, setDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { getBookById } from "./master.js";
-import { getBookCoverCandidates, setBookCover } from "./bookCovers.js";
+import { setBookCover } from "./bookCovers.js";
 import { getUserData } from "./favorites.js";
 
 /* Escapes HTML special characters to prevent XSS */
 const esc = (s) =>
   String(s ?? "").replace(
     /[&<>"']/g,
-    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
   );
-
 
 /* ============ Firestore ============
    Books live in the subcollection users/{uid}/books/{volumeId}:
@@ -33,7 +33,9 @@ async function loadBooks(uid) {
   // Oldest first. A just-saved doc can have a null createdAt for a moment.
   const docs = snap.docs
     .map((d) => ({ id: d.id, ...d.data() }))
-    .sort((a, b) => (a.bookInfo?.createdAt?.toMillis?.() ?? Infinity) - (b.bookInfo?.createdAt?.toMillis?.() ?? Infinity));
+    .sort(
+      (a, b) => (a.bookInfo?.createdAt?.toMillis?.() ?? Infinity) - (b.bookInfo?.createdAt?.toMillis?.() ?? Infinity),
+    );
 
   return Promise.all(
     docs.map(async (data) => {
@@ -41,12 +43,13 @@ async function loadBooks(uid) {
       const volumeId = info.id || data.id;
       const title = info.title ?? "Untitled";
       const authors = Array.isArray(info.authors) ? info.authors.join(", ") : (info.authors ?? "");
-      let coverCandidates = getBookCoverCandidates(info.imageLinks ?? info.image);
-      if (coverCandidates.length < 2) {
+      let coverImageLinks = info.imageLinks ?? info.image;
+      if (!coverImageLinks?.extraLarge) {
         try {
           const apiBook = await getBookById(volumeId);
-          const apiCandidates = getBookCoverCandidates(apiBook.volumeInfo?.imageLinks);
-          if (apiCandidates.length) coverCandidates = apiCandidates;
+          if (apiBook.volumeInfo?.imageLinks) {
+            coverImageLinks = apiBook.volumeInfo.imageLinks;
+          }
         } catch (error) {
           console.warn(`Could not load cover variants for book ${volumeId}:`, error);
         }
@@ -57,14 +60,14 @@ async function loadBooks(uid) {
         id: volumeId,
         name: title,
         subtitle: authors,
-        coverCandidates,
+        coverImageLinks,
         page:
           (note
             ? `<p class="fst-italic border-start border-2 border-secondary ps-2 my-2">${esc(note)}</p>`
             : `<p class="small text-muted">No note for this book.</p>`) +
           `<div class="mt-3"><a href="/html/book_info.html?bookid=${encodeURIComponent(volumeId)}" class="btn btn-sm btn-book">View Details & Retailers</a></div>`,
       };
-    })
+    }),
   );
 }
 
@@ -88,7 +91,6 @@ let busy = false;
 let currentUser = null;
 let favorites = [];
 
-
 function updateFavButton() {
   if (!favBtn) return;
 
@@ -101,7 +103,6 @@ function updateFavButton() {
   favBtn.setAttribute("aria-pressed", String(isFav));
   favBtn.setAttribute("aria-label", isFav ? "Remove from favorites" : "Add to favorites");
 }
-
 
 function buildBook(i) {
   const b = books[i];
@@ -119,11 +120,8 @@ function buildBook(i) {
         <p class="mb-0">${esc(b.subtitle)}</p>
       </div>
     </div>`;
-  setBookCover(
-    book.querySelector(".library-cover"),
-    b.coverCandidates,
-    b.name,
-    () => getBookById(b.id).then((apiBook) => apiBook.volumeInfo?.imageLinks)
+  setBookCover(book.querySelector(".library-cover"), b.coverImageLinks, b.name, () =>
+    getBookById(b.id).then((apiBook) => apiBook.volumeInfo?.imageLinks),
   );
 
   if (heading) heading.textContent = b.name;
@@ -243,24 +241,20 @@ if (favBtn) {
 
     const wasFav = favorites.includes(current.id);
 
-    // Update the screen 
-    favorites = wasFav
-      ? favorites.filter((id) => id !== current.id)
-      : [...favorites, current.id];
+    // Update the screen
+    favorites = wasFav ? favorites.filter((id) => id !== current.id) : [...favorites, current.id];
     updateFavButton();
 
     try {
       await setDoc(
         doc(db, "users", currentUser.uid),
         { favorites: wasFav ? arrayRemove(current.id) : arrayUnion(current.id) },
-        { merge: true }
+        { merge: true },
       );
     } catch (error) {
       console.error("Error saving favorite:", error);
 
-      favorites = wasFav
-        ? [...favorites, current.id]
-        : favorites.filter((id) => id !== current.id);
+      favorites = wasFav ? [...favorites, current.id] : favorites.filter((id) => id !== current.id);
       updateFavButton();
     }
   });
@@ -305,19 +299,9 @@ if (deleteBtn) {
 
 /* ============ Auth State Listener ============ */
 if (hint) hint.textContent = "Loading books…";
-onAuthStateChanged(auth, (user) => {
+requireAuth((user) => {
   currentUser = user;
   const addBtn = document.getElementById("addBtn");
-  if (!user) {
-    if (stage) stage.classList.add("d-none");
-    if (controls) controls.classList.add("d-none");
-    if (reviewsContainer) reviewsContainer.classList.add("d-none");
-    if (addBtn) addBtn.classList.add("d-none");
-    if (hint) {
-      hint.innerHTML = 'Please <a href="/html/login.html" class="fw-semibold text-decoration-none">log in</a> to see your library.';
-    }
-    return;
-  }
   if (addBtn) addBtn.classList.remove("d-none");
   refresh().catch((err) => {
     console.error("Could not load library:", err);

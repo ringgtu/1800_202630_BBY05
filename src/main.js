@@ -3,8 +3,6 @@ import "bootstrap";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import "./components/site-navbar.js";
 
-// If you have custom global styles, import them as well:
-// import '../styles/style.css';
-
-function sayHello() {}
-// document.addEventListener('DOMContentLoaded', sayHello);
+if (!["/", "/index.html"].includes(window.location.pathname)) {
+  import("./authentication.js").then(({ requireAuth }) => requireAuth());
+}
