@@ -68,7 +68,7 @@ export async function signupUser(name, email, password) {
       name: name,
       email: email,
       country: "Canada", // Default value
-      identity: "BookLover", // Default value
+      genre: "", // Default value
     });
     console.log("Firestore user document created successfully!");
   } catch (error) {
@@ -97,31 +97,15 @@ export async function logoutUser() {
   window.location.href = "/index.html";
 }
 
-// -------------------------------------------------------------
-// checkAuthState()
-// -------------------------------------------------------------
-// Observes changes in the user's authentication state (login/logout)
-// and updates the UI or redirects accordingly.
-//
-// If the user is on "main.html":
-//   - If logged in → displays "Hello, [Name]!"
-//   - If not logged in → redirects to "index.html"
-//
-// This function should be called once when the page loads.
-//
-// Usage:
-//   checkAuthState();
-// -------------------------------------------------------------
-export function checkAuthState() {
-  onAuthStateChanged(auth, (user) => {
-    if (window.location.pathname.endsWith("main.html")) {
-      if (user) {
-        const displayName = user.displayName || user.email;
-        $("#welcomeMessage").text(`Hello, ${displayName}!`);
-      } else {
-        window.location.href = "index.html";
-      }
+// Redirects signed-out visitors and optionally runs a callback for signed-in users.
+export function requireAuth(onAuthenticated) {
+  return onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      window.location.replace("/index.html");
+      return;
     }
+
+    onAuthenticated?.(user);
   });
 }
 

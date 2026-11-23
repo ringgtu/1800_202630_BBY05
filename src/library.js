@@ -3,17 +3,19 @@ import "bootstrap";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import "/styles/style.css";
 import "./components/site-navbar.js";
+import { requireAuth } from "./authentication.js";
 import { auth, db } from "./firebaseConfig.js";
-import { collection, deleteDoc, doc, getDocs } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDocs, setDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { getBookById } from "./master.js";
-import { getBookCoverCandidates, setBookCover } from "./bookCovers.js";
+import { setBookCover } from "./bookCovers.js";
+import { getUserData } from "./favorites.js";
 
 /* Escapes HTML special characters to prevent XSS */
 const esc = (s) =>
   String(s ?? "").replace(
     /[&<>"']/g,
-    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
   );
 
 /* ============ Firestore ============
@@ -31,7 +33,9 @@ async function loadBooks(uid) {
   // Oldest first. A just-saved doc can have a null createdAt for a moment.
   const docs = snap.docs
     .map((d) => ({ id: d.id, ...d.data() }))
-    .sort((a, b) => (a.bookInfo?.createdAt?.toMillis?.() ?? Infinity) - (b.bookInfo?.createdAt?.toMillis?.() ?? Infinity));
+    .sort(
+      (a, b) => (a.bookInfo?.createdAt?.toMillis?.() ?? Infinity) - (b.bookInfo?.createdAt?.toMillis?.() ?? Infinity),
+    );
 
   return Promise.all(
     docs.map(async (data) => {
@@ -39,12 +43,13 @@ async function loadBooks(uid) {
       const volumeId = info.id || data.id;
       const title = info.title ?? "Untitled";
       const authors = Array.isArray(info.authors) ? info.authors.join(", ") : (info.authors ?? "");
-      let coverCandidates = getBookCoverCandidates(info.imageLinks ?? info.image);
-      if (coverCandidates.length < 2) {
+      let coverImageLinks = info.imageLinks ?? info.image;
+      if (!coverImageLinks?.extraLarge) {
         try {
           const apiBook = await getBookById(volumeId);
-          const apiCandidates = getBookCoverCandidates(apiBook.volumeInfo?.imageLinks);
-          if (apiCandidates.length) coverCandidates = apiCandidates;
+          if (apiBook.volumeInfo?.imageLinks) {
+            coverImageLinks = apiBook.volumeInfo.imageLinks;
+          }
         } catch (error) {
           console.warn(`Could not load cover variants for book ${volumeId}:`, error);
         }
@@ -56,14 +61,14 @@ async function loadBooks(uid) {
         name: title,
         subtitle: authors,
         note,
-        coverCandidates,
+        coverImageLinks,
         page:
           (note
             ? `<p class="fst-italic border-start border-2 border-secondary ps-2 my-2">${esc(note)}</p>`
             : `<p class="small text-muted">No note for this book.</p>`) +
           `<div class="mt-3"><a href="/html/book_info.html?bookid=${encodeURIComponent(volumeId)}" class="btn btn-sm btn-book">View Details & Retailers</a></div>`,
       };
-    })
+    }),
   );
 }
 
@@ -85,10 +90,25 @@ const deleteBtn = document.getElementById("deleteBtn");
 const searchBox = document.getElementById("searchBox");
 const librarySearch = document.getElementById("librarySearch");
 const searchResults = document.getElementById("searchResults");
+const favBtn = document.getElementById("favBtn");
 
 let bookIdx = 0;
 let busy = false;
 let currentUser = null;
+let favorites = [];
+
+function updateFavButton() {
+  if (!favBtn) return;
+
+  const current = books[bookIdx];
+  favBtn.classList.toggle("d-none", !current); // hidden when the library is empty
+  if (!current) return;
+
+  const isFav = favorites.includes(current.id);
+  favBtn.querySelector("i").className = isFav ? "bi bi-heart-fill" : "bi bi-heart";
+  favBtn.setAttribute("aria-pressed", String(isFav));
+  favBtn.setAttribute("aria-label", isFav ? "Remove from favorites" : "Add to favorites");
+}
 
 /* ----- the smaller previous and next books on each side ----- */
 
@@ -103,7 +123,7 @@ function renderSideBook(button, b) {
   }
   button.setAttribute("aria-label", `${b.name}`);
   const img = document.createElement("img");
-  setBookCover(img, b.coverCandidates, b.name);
+  setBookCover(img, b.coverImageLinks, b.name);
   button.append(img);
 }
 
@@ -138,18 +158,15 @@ function buildBook(i) {
     <div class="base"><div class="face front">${b.page}</div></div>
     <div class="leaf">
       <div class="face front cover has-image">
-        <img class="library-cover" src="/images/book.jpg" alt="Cover of ${esc(b.name)}">
+        <img class="library-cover" src="/images/cover_not_available.jpg" alt="Cover of ${esc(b.name)}">
       </div>
       <div class="face back inside">
         <h2>${esc(b.name)}</h2>
         <p class="mb-0">${esc(b.subtitle)}</p>
       </div>
     </div>`;
-  setBookCover(
-    book.querySelector(".library-cover"),
-    b.coverCandidates,
-    b.name,
-    () => getBookById(b.id).then((apiBook) => apiBook.volumeInfo?.imageLinks)
+  setBookCover(book.querySelector(".library-cover"), b.coverImageLinks, b.name, () =>
+    getBookById(b.id).then((apiBook) => apiBook.volumeInfo?.imageLinks),
   );
 
   renderSideBooks(i);
@@ -170,6 +187,7 @@ function buildBook(i) {
   }
 
   updateHint();
+  updateFavButton();
 }
 
 function updateHint() {
@@ -305,10 +323,19 @@ document.addEventListener("click", (e) => {
 /* Loads the user's books from Firestore and shows the first one */
 async function refresh() {
   if (!currentUser) return;
+
+  try {
+    favorites = (await getUserData(currentUser.uid)).favorites ?? [];
+  } catch (error) {
+    console.error("Could not load favorites:", error);
+    favorites = [];
+  }
+
   books = await loadBooks(currentUser.uid);
   if (!books.length) {
     book.innerHTML = "";
     clearLibraryExtras();
+    updateFavButton();
     if (stage) stage.classList.add("d-none");
     if (controls) controls.classList.add("d-none");
     if (reviewsContainer) reviewsContainer.classList.add("d-none");
@@ -363,6 +390,32 @@ if (book) {
   });
 }
 
+if (favBtn) {
+  favBtn.addEventListener("click", async () => {
+    const current = books[bookIdx];
+    if (!currentUser || !current) return;
+
+    const wasFav = favorites.includes(current.id);
+
+    // Update the screen
+    favorites = wasFav ? favorites.filter((id) => id !== current.id) : [...favorites, current.id];
+    updateFavButton();
+
+    try {
+      await setDoc(
+        doc(db, "users", currentUser.uid),
+        { favorites: wasFav ? arrayRemove(current.id) : arrayUnion(current.id) },
+        { merge: true },
+      );
+    } catch (error) {
+      console.error("Error saving favorite:", error);
+
+      favorites = wasFav ? [...favorites, current.id] : favorites.filter((id) => id !== current.id);
+      updateFavButton();
+    }
+  });
+}
+
 /* ============ Delete current book ============ */
 if (deleteBtn) {
   deleteBtn.addEventListener("click", async () => {
@@ -380,6 +433,7 @@ if (deleteBtn) {
         // Last book removed — hide everything
         book.innerHTML = "";
         clearLibraryExtras();
+        updateFavButton();
         if (stage) stage.classList.add("d-none");
         if (controls) controls.classList.add("d-none");
         if (reviewsContainer) reviewsContainer.classList.add("d-none");
@@ -402,20 +456,9 @@ if (deleteBtn) {
 
 /* ============ Auth State Listener ============ */
 if (hint) hint.textContent = "Loading books…";
-onAuthStateChanged(auth, (user) => {
+requireAuth((user) => {
   currentUser = user;
   const addBtn = document.getElementById("addBtn");
-  if (!user) {
-    clearLibraryExtras();
-    if (stage) stage.classList.add("d-none");
-    if (controls) controls.classList.add("d-none");
-    if (reviewsContainer) reviewsContainer.classList.add("d-none");
-    if (addBtn) addBtn.classList.add("d-none");
-    if (hint) {
-      hint.innerHTML = 'Please <a href="/html/login.html" class="fw-semibold text-decoration-none">log in</a> to see your library.';
-    }
-    return;
-  }
   if (addBtn) addBtn.classList.remove("d-none");
   refresh().catch((err) => {
     console.error("Could not load library:", err);
