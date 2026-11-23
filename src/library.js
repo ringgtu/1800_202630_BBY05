@@ -55,6 +55,7 @@ async function loadBooks(uid) {
         id: volumeId,
         name: title,
         subtitle: authors,
+        note,
         coverCandidates,
         page:
           (note
@@ -70,6 +71,8 @@ async function loadBooks(uid) {
 const stage = document.getElementById("stage");
 const shelf = document.getElementById("shelf");
 const book = document.getElementById("book");
+const sidePrev = document.getElementById("sidePrev");
+const sideNext = document.getElementById("sideNext");
 const hint = document.getElementById("hint");
 const heading = document.getElementById("heading");
 const label = document.getElementById("label");
@@ -79,10 +82,52 @@ const controls = document.getElementById("controls");
 const reviewsContainer = document.getElementById("reviewsContainer");
 const reviewsBtn = document.getElementById("reviewsBtn");
 const deleteBtn = document.getElementById("deleteBtn");
+const searchBox = document.getElementById("searchBox");
+const librarySearch = document.getElementById("librarySearch");
+const searchResults = document.getElementById("searchResults");
 
 let bookIdx = 0;
 let busy = false;
 let currentUser = null;
+
+/* ----- the smaller previous and next books on each side ----- */
+
+/* Fills one side button with a book's cover, or hides it when there is no book */
+function renderSideBook(button, b) {
+  if (!button) return;
+  button.replaceChildren();
+  button.classList.toggle("is-empty", !b);
+  if (!b) {
+    button.removeAttribute("aria-label");
+    return;
+  }
+  button.setAttribute("aria-label", `${b.name}`);
+  const img = document.createElement("img");
+  setBookCover(img, b.coverCandidates, b.name);
+  button.append(img);
+}
+
+/* The books on the left and the right of book i, wrapping around like the Previous/Next buttons.
+   With only 2 books the other one is shown once, on the right, instead of on both sides. */
+function neighbors(i) {
+  const n = books.length;
+  if (n <= 1) return [null, null];
+  if (n === 2) return [null, books[1 - i]];
+  return [books[(i - 1 + n) % n], books[(i + 1) % n]];
+}
+
+function renderSideBooks(i) {
+  const [before, after] = neighbors(i);
+  renderSideBook(sidePrev, before);
+  renderSideBook(sideNext, after);
+}
+
+/* Used whenever there is no library to show: hides the side books and the search box */
+function clearLibraryExtras() {
+  renderSideBook(sidePrev, null);
+  renderSideBook(sideNext, null);
+  setSearchVisible(false);
+}
 
 function buildBook(i) {
   const b = books[i];
@@ -106,6 +151,8 @@ function buildBook(i) {
     b.name,
     () => getBookById(b.id).then((apiBook) => apiBook.volumeInfo?.imageLinks)
   );
+
+  renderSideBooks(i);
 
   if (heading) heading.textContent = b.name;
   if (label) label.textContent = `Book ${i + 1} of ${books.length}`;
@@ -132,12 +179,13 @@ function updateHint() {
     : "Tap the book to open it";
 }
 
-function switchBook(dir) {
-  if (busy || books.length <= 1) return;
+/* Slides to the book at index i. dir is the way the shelf slides: 1 = to the left, -1 = to the right */
+function goTo(i, dir) {
+  if (busy || i === bookIdx || !books[i]) return;
   busy = true;
   shelf.classList.add(dir > 0 ? "out-left" : "out-right");
   setTimeout(() => {
-    bookIdx = (bookIdx + dir + books.length) % books.length;
+    bookIdx = i;
     book.style.transition = "none";
     buildBook(bookIdx);
     shelf.classList.remove("out-left", "out-right");
@@ -153,12 +201,114 @@ function switchBook(dir) {
   }, 350);
 }
 
+/* Previous / next book, wrapping around */
+function switchBook(dir) {
+  if (books.length <= 1) return;
+  goTo((bookIdx + dir + books.length) % books.length, dir);
+}
+
+/* ----- search my library -----
+   The books are already loaded from Firestore into the books array,
+   so searching them needs no extra reads. */
+function setSearchVisible(show) {
+  if (!searchBox) return;
+  searchBox.classList.toggle("d-none", !show);
+  if (!show) hideSearchResults();
+}
+
+function hideSearchResults() {
+  if (!searchResults) return;
+  searchResults.classList.add("d-none");
+  searchResults.replaceChildren();
+}
+
+/* Every word typed must appear in the title, the authors or the user's note */
+function searchLibrary(text) {
+  const words = text.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!words.length) return [];
+  return books
+    .map((b, index) => ({ b, index, haystack: `${b.name} ${b.subtitle} ${b.note}`.toLowerCase() }))
+    .filter(({ haystack }) => words.every((w) => haystack.includes(w)));
+}
+
+/* Brings a book to the front. If it already is the front book, just opens it. */
+function showBookAt(index) {
+  hideSearchResults();
+  if (librarySearch) librarySearch.value = "";
+  if (index === bookIdx) {
+    book.classList.add("open");
+    updateHint();
+    return;
+  }
+  goTo(index, index > bookIdx ? 1 : -1);
+}
+
+function renderSearchResults(matches) {
+  searchResults.replaceChildren();
+
+  if (!matches.length) {
+    const none = document.createElement("div");
+    none.className = "list-group-item text-body-secondary small";
+    none.textContent = "No books in your library match that.";
+    searchResults.append(none);
+  } else {
+    matches.slice(0, 6).forEach(({ b, index }) => {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "list-group-item list-group-item-action";
+
+      const title = document.createElement("div");
+      title.className = "fw-semibold";
+      title.textContent = b.name;
+
+      const authors = document.createElement("div");
+      authors.className = "small";
+      authors.textContent = b.subtitle;
+
+      item.append(title, authors);
+      item.addEventListener("click", () => showBookAt(index));
+      searchResults.append(item);
+    });
+  }
+
+  searchResults.classList.remove("d-none");
+}
+
+if (librarySearch) {
+  librarySearch.addEventListener("input", () => {
+    const text = librarySearch.value.trim();
+    if (!text) {
+      hideSearchResults();
+      return;
+    }
+    renderSearchResults(searchLibrary(text));
+  });
+
+  librarySearch.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      librarySearch.value = "";
+      hideSearchResults();
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const first = searchLibrary(librarySearch.value.trim())[0];
+      if (first) showBookAt(first.index);
+    }
+  });
+}
+
+/* Clicking anywhere else closes the list of matches */
+document.addEventListener("click", (e) => {
+  if (searchBox && !searchBox.contains(e.target)) hideSearchResults();
+});
+
 /* Loads the user's books from Firestore and shows the first one */
 async function refresh() {
   if (!currentUser) return;
   books = await loadBooks(currentUser.uid);
   if (!books.length) {
     book.innerHTML = "";
+    clearLibraryExtras();
     if (stage) stage.classList.add("d-none");
     if (controls) controls.classList.add("d-none");
     if (reviewsContainer) reviewsContainer.classList.add("d-none");
@@ -168,6 +318,7 @@ async function refresh() {
     return;
   }
   if (stage) stage.classList.remove("d-none");
+  setSearchVisible(true);
   if (controls) controls.classList.remove("d-none");
   if (reviewsContainer) reviewsContainer.classList.remove("d-none");
   bookIdx = 0;
@@ -177,7 +328,12 @@ async function refresh() {
 if (nextBtn) nextBtn.addEventListener("click", () => switchBook(1));
 if (prevBtn) prevBtn.addEventListener("click", () => switchBook(-1));
 
+/* Click a side book to go to it */
+if (sideNext) sideNext.addEventListener("click", () => switchBook(1));
+if (sidePrev) sidePrev.addEventListener("click", () => switchBook(-1));
+
 document.addEventListener("keydown", (e) => {
+  if (e.target.closest("input, textarea")) return;      // arrow keys move the cursor while typing in the search box
   if (e.key === "ArrowRight") switchBook(1);
   if (e.key === "ArrowLeft") switchBook(-1);
 });
@@ -223,6 +379,7 @@ if (deleteBtn) {
       if (!books.length) {
         // Last book removed — hide everything
         book.innerHTML = "";
+        clearLibraryExtras();
         if (stage) stage.classList.add("d-none");
         if (controls) controls.classList.add("d-none");
         if (reviewsContainer) reviewsContainer.classList.add("d-none");
@@ -249,6 +406,7 @@ onAuthStateChanged(auth, (user) => {
   currentUser = user;
   const addBtn = document.getElementById("addBtn");
   if (!user) {
+    clearLibraryExtras();
     if (stage) stage.classList.add("d-none");
     if (controls) controls.classList.add("d-none");
     if (reviewsContainer) reviewsContainer.classList.add("d-none");
@@ -261,6 +419,7 @@ onAuthStateChanged(auth, (user) => {
   if (addBtn) addBtn.classList.remove("d-none");
   refresh().catch((err) => {
     console.error("Could not load library:", err);
+    clearLibraryExtras();
     if (stage) stage.classList.add("d-none");
     if (controls) controls.classList.add("d-none");
     if (reviewsContainer) reviewsContainer.classList.add("d-none");
