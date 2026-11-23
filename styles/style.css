@@ -14,7 +14,7 @@
   --paper: #fffaf2; /* a lighter tint of --bg, for cards, book pages and pop-ups */
 
   /* size of the library book: one page, and its height */
-  --pw: min(42vw, 320px);
+  --pw: min(44vw, 380px);
   --ph: calc(var(--pw) * 1.4);
 }
 
@@ -92,7 +92,8 @@ hr {
 }
 
 /* outline buttons: burgundy for primary, rust for secondary */
-.btn.btn-outline-primary {
+.btn.btn-outline-primary,
+.btn.btn-outline-secondary {
   --bs-btn-color: var(--primary);
   --bs-btn-border-color: var(--primary);
   --bs-btn-hover-bg: var(--primary);
@@ -110,10 +111,8 @@ hr {
   --bs-btn-border-color: var(--secondary);
   --bs-btn-hover-bg: var(--secondary);
   --bs-btn-hover-border-color: var(--secondary);
-  --bs-btn-hover-color: var(--bg);
   --bs-btn-active-bg: var(--secondary);
   --bs-btn-active-border-color: var(--secondary);
-  --bs-btn-active-color: var(--bg);
   --bs-btn-disabled-color: var(--secondary);
   --bs-btn-disabled-border-color: var(--secondary);
 }
@@ -386,7 +385,8 @@ main h2 {
   line-height: 1.55;
 }
 
-/* Front cover face for the library book. */
+/* front cover (its colors are set per book by library.js):
+   picture in the middle, title underneath, author under the title */
 .face.cover {
   display: flex;
   flex-direction: column;
@@ -408,7 +408,7 @@ main h2 {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
-/* The cover image fills the front cover face. */
+/* when the book has a Google Books image, the image IS the front cover */
 .face.cover.has-image {
   padding: 0;
   border: 0;
@@ -662,6 +662,120 @@ main h2 {
   box-shadow: 0 2px 8px rgba(46, 42, 38, 0.3);
 }
 
+/* top right: the search box and the Add book button, side by side.
+   On a phone the bar sits under the title instead, so it never covers it. */
+.top-bar {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1030;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.top-bar-search {
+  position: relative;
+  width: 14rem;
+}
+
+/* the list of matching books under the search box */
+#searchResults {
+  --bs-list-group-bg: var(--paper);
+  --bs-list-group-color: var(--text);
+  --bs-list-group-border-color: var(--accent);
+  --bs-list-group-action-color: var(--text);
+  --bs-list-group-action-hover-bg: var(--accent);
+  --bs-list-group-action-hover-color: var(--text);
+  width: min(20rem, 90vw);
+  max-height: 18rem;
+  overflow-y: auto;
+  box-shadow: 0 6px 18px rgba(46, 42, 38, 0.25);
+}
+
+@media (max-width: 575.98px) {
+  .top-bar {
+    position: static;
+    margin: 0 1rem 1rem;
+  }
+
+  .top-bar-search {
+    flex-grow: 1;
+    width: auto;
+  }
+}
+
+/* previous and next book: smaller books on each side of the main book.
+   library.js fills them and removes .is-empty when there is a book to show. */
+.shelf {
+  position: relative;
+  --side-gap: clamp(1.5rem, 5vw, 4rem); /* space between the main book and the side books */
+  --side-shift: calc(var(--pw) * 0.5); /* a closed book is narrower, so the side books sit closer to it */
+}
+
+.shelf:has(.book.open) {
+  --side-shift: 0px; /* an open book is wider, so they move out of its way */
+}
+
+.side-book {
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--pw) * 0.5); /* half the size of one main page */
+  height: calc(var(--ph) * 0.5);
+  padding: 0.25rem;
+  overflow: hidden;
+  border: 0;
+  color: var(--ink, var(--bg));
+  background: linear-gradient(135deg, var(--c1, var(--primary)), var(--c2, var(--text)));
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.7rem;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(46, 42, 38, 0.3);
+  opacity: 0.75;
+  cursor: pointer;
+  transition:
+    transform 0.8s ease,
+    opacity 0.3s ease,
+    scale 0.2s ease;
+}
+
+.side-book:hover,
+.side-book:focus-visible {
+  opacity: 1;
+  scale: 1.05;
+}
+
+.side-prev {
+  right: calc(50% + var(--pw) + var(--side-gap)); /* to the left of the main book */
+  transform: translateY(-50%) translateX(var(--side-shift));
+  border-radius: 6px 2px 2px 6px;
+}
+
+.side-next {
+  left: calc(50% + var(--pw) + var(--side-gap)); /* to the right of the main book */
+  transform: translateY(-50%) translateX(calc(var(--side-shift) * -1));
+  border-radius: 2px 6px 6px 2px;
+}
+
+/* the cover picture fills the small book */
+.side-book img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* no previous or next book to show */
+.side-book.is-empty {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* 10. Library & Add a book pages: modal and search results list
    ========================================================================== */
 div.modal {
@@ -689,17 +803,6 @@ div.modal {
   --bs-list-group-active-color: var(--bg);
 }
 
-#reviewSummaryBar .list-group-item {
-  cursor: pointer;
-  transition: background-color 0.15s ease-in-out;
-}
-
-#reviewSummaryBar .list-group-item:hover,
-#reviewSummaryBar .list-group-item:focus-visible {
-  background-color: var(--accent);
-  outline: none;
-}
-
 .result-thumb {
   flex-shrink: 0;
   width: 40px;
@@ -708,16 +811,12 @@ div.modal {
   border-radius: 3px;
 }
 
-.book-cover-image {
-  display: block;
-  width: 100%;
-  aspect-ratio: 2 / 3;
-  object-fit: contain;
-}
-
-.favorite-cover,
-.review-cover {
-  object-fit: contain;
+/* the search results stay a fixed height and scroll inside their own box */
+.results-scroll {
+  max-height: 22rem; /* about 4 or 5 books, then it scrolls */
+  overflow-y: auto;
+  overscroll-behavior: contain; /* scrolling the list doesn't also scroll the page */
+  scrollbar-color: var(--secondary) transparent;
 }
 
 /* 11. Profile page
@@ -732,21 +831,26 @@ div.modal {
   --bs-dark-bg-subtle: var(--secondary);
 }
 
-/* 12. Reviews page
-   Add class="reviews-page" to the <body> of reviews.html.
+/* 12. Reviews pages (the list and one single review)
+   Add class="reviews-page" to the <body> of reviews.html and review.html.
    ========================================================================== */
 .reviews-page {
-  --bs-secondary-rgb: 164, 74, 63; /* = --secondary: the .text-secondary status message */
+  --bs-secondary-rgb: 164, 74, 63; /* = --secondary: .text-secondary messages and details */
 }
 
 /* back arrow (use class="back-link" on any back link) */
 .back-link {
   color: var(--primary);
-  text-decoration: none;
 }
 
 .back-link:hover {
   color: var(--secondary);
+}
+
+/* star ratings, filled in by the page's JavaScript */
+.reviews-page #detailStars,
+.reviews-page #editStars {
+  color: var(--primary);
 }
 
 .back-link:focus-visible {

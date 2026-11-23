@@ -8,20 +8,43 @@
     <script type="module" src="/src/library.js"></script>
   </head>
   <body class="library-page">
-  <div class="container library-header text-center py-3 px-5">
-    <div class="library-title-row d-flex justify-content-center align-items-center gap-2">
-      <h1 class="h4 mb-0" id="heading" style="color: var(--primary)">My Library</h1>
-      <button id="favBtn" type="button" class="btn btn-link text-body p-0 fs-4 d-none" aria-label="Add to favorites" aria-pressed="false">
-        <i class="bi bi-heart"></i>
-      </button>
+    <div class="container library-header text-center py-3 px-5">
+      <div class="library-title-row d-flex justify-content-center align-items-center gap-2">
+        <h1 class="h4 mb-0" id="heading" style="color: var(--primary)">My Library</h1>
+        <button id="favBtn" type="button" class="btn btn-link text-body p-0 fs-4 d-none" aria-label="Add to favorites" aria-pressed="false">
+          <i class="bi bi-heart"></i>
+        </button>
+      </div>
+      <small class="opacity-75" id="hint" aria-live="polite"></small>
     </div>
-    <small class="opacity-75" id="hint"></small>
-  </div>
 
-    <!-- 3D Book Stage -->
+    <!-- Top right: search my library, and Add book -->
+    <div class="top-bar">
+      <div class="top-bar-search d-none" id="searchBox">
+        <div class="input-group">
+          <span class="input-group-text bg-secondary-subtle border-0"><i class="bi bi-search"></i></span>
+          <input
+            type="search"
+            id="librarySearch"
+            class="form-control bg-secondary-subtle border-0"
+            placeholder="Search my library"
+            aria-label="Search my library"
+            autocomplete="off" />
+        </div>
+        <div class="list-group position-absolute end-0 mt-1 d-none" id="searchResults" aria-live="polite"></div>
+      </div>
+
+      <a href="./addbook.html" class="btn btn-add d-none" id="addBtn" aria-label="Add book">
+        <i class="bi bi-plus-lg"></i><span class="d-none d-sm-inline ms-1">Add book</span>
+      </a>
+    </div>
+
+    <!-- 3D Book Stage: previous book | current book | next book -->
     <div class="stage d-none" id="stage">
       <div class="shelf" id="shelf">
+        <button type="button" class="side-book side-prev is-empty" id="sidePrev" tabindex="-1"></button>
         <div class="book" id="book"></div>
+        <button type="button" class="side-book side-next is-empty" id="sideNext" tabindex="-1"></button>
       </div>
     </div>
 
@@ -29,7 +52,7 @@
       <!-- Navigation Controls -->
       <div class="controls mx-auto d-flex justify-content-between align-items-center d-none" id="controls">
         <button class="btn btn-book" id="prev">&larr; Previous book</button>
-        <span class="small opacity-75" id="label"></span>
+        <span class="small opacity-75" id="label" aria-live="polite"></span>
         <button class="btn btn-book" id="next">Next book &rarr;</button>
       </div>
 
@@ -39,54 +62,6 @@
         <button class="btn btn-cancel" id="deleteBtn" type="button">
           <i class="bi bi-trash"></i> Remove
         </button>
-      </div>
-    </div>
-
-    <!-- Add Book Link: fixed top right -->
-<a
-  href="./addbook.html"
-  class="btn btn-add add-fixed d-none"
-  id="addBtn"
-  aria-label="Add book">
-  <i class="bi bi-plus-lg"></i><span class="d-none d-sm-inline ms-1">Add book</span>
-</a>
-
-    <!-- Add Book Modal -->
-    <div class="modal fade" id="addModal" tabindex="-1" aria-labelledby="addModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h2 class="modal-title h5" id="addModalLabel">Add a book</h2>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <form id="searchForm" class="input-group mb-3">
-              <input
-                type="text"
-                id="searchInput"
-                class="form-control"
-                placeholder="Title, author or ISBN"
-                aria-label="Search for a book"
-                required />
-              <button class="btn btn-add" type="submit">Search</button>
-            </form>
-            <div id="searchStatus" class="small mb-2" role="status"></div>
-            <div id="results" class="list-group mb-3"></div>
-            <div id="noteBox" class="d-none">
-              <label for="noteInput" class="form-label fw-semibold">Your note</label>
-              <textarea
-                id="noteInput"
-                class="form-control"
-                rows="3"
-                maxlength="500"
-                placeholder="Why are you adding this book? (optional)"></textarea>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-add" id="saveBtn" disabled>Save book</button>
-          </div>
-        </div>
       </div>
     </div>
 
