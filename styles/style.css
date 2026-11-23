@@ -287,17 +287,17 @@ main h2 {
   min-height: 100vh;
   min-height: 100dvh;
   flex-direction: column;
-  --pw: min(48vw, 42vh, 480px);
+  --pw: min(48vw, 36vh, 440px);
   --ph: calc(var(--pw) * 1.4);
 }
 
 .library-page .stage {
   display: flex;
-  flex: 1 0 auto;
+  flex: 1 1 auto;
   align-items: center;
   justify-content: center;
   min-height: 0;
-  padding: 0.75rem 0;
+  padding: 0.5rem 0;
 }
 
 /* sliding from one book to the next */
@@ -544,7 +544,7 @@ main h2 {
 
 @media (max-width: 575.98px) {
   .library-page {
-    --pw: min(63vw, 34vh, 480px);
+    --pw: min(63vw, 30vh, 420px);
     --ph: calc(var(--pw) * 1.4);
   }
 
@@ -615,6 +615,51 @@ main h2 {
 
   .library-actions #label {
     white-space: nowrap;
+  }
+}
+
+/* Height-based adjustments: prevent library-actions from colliding with book when viewport height is small */
+@media (max-height: 750px) {
+  .library-page {
+    --pw: min(46vw, 28vh, 360px);
+    --ph: calc(var(--pw) * 1.4);
+  }
+
+  .library-actions {
+    bottom: calc(5.5rem + env(safe-area-inset-bottom));
+    padding: 0.65rem 0.85rem;
+    gap: 0.6rem;
+  }
+
+  .library-page site-navbar > div[aria-hidden="true"] {
+    height: calc(12rem + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-height: 600px) {
+  .library-page {
+    --pw: min(44vw, 24vh, 280px);
+    --ph: calc(var(--pw) * 1.4);
+  }
+
+  .library-page .library-header {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.25rem !important;
+  }
+
+  .library-actions {
+    bottom: calc(4.75rem + env(safe-area-inset-bottom));
+    padding: 0.45rem 0.75rem;
+    gap: 0.4rem;
+  }
+
+  .library-actions .btn {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .library-page site-navbar > div[aria-hidden="true"] {
+    height: calc(10rem + env(safe-area-inset-bottom));
   }
 }
 
