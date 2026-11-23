@@ -36,18 +36,21 @@ Developed for the COMP 1800 course, this project applies User-Centred Design pra
 ### Local Development Setup
 
 1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/ringgtu/1800_202630_BBY05.git
    cd 1800_202630_BBY05
    ```
 
 2. **Install dependencies:**
+
    ```bash
    npm install
    ```
 
 3. **Configure Environment Variables:**
    Create a `.env` file in the project root (refer to `.env.example` if available) with your Firebase credentials and Google Books API key:
+
    ```env
    VITE_FIREBASE_API_KEY="YOUR_FIREBASE_API_KEY"
    VITE_FIREBASE_AUTH_DOMAIN="YOUR_PROJECT_ID.firebaseapp.com"
@@ -57,6 +60,7 @@ Developed for the COMP 1800 course, this project applies User-Centred Design pra
    ```
 
 4. **Start the development server:**
+
    ```bash
    npm run dev
    ```
@@ -107,16 +111,10 @@ Developed for the COMP 1800 course, this project applies User-Centred Design pra
 
 ## Contributors
 
-- **Your Name** - BCIT CST Student with a passion for outdoor adventures and user-friendly applications. Fun fact: Loves solving Rubik's Cubes in under a minute.
-- **Teammate Name** - BCIT CST Student, Frontend enthusiast with a knack for creative design. Fun fact: Has a collection of over 50 houseplants.
-
 - **Luka** - BCIT CST Student that loves hiking. Fun fact: He loves his Macbook that he recently got.
-- **Tyki** - BCIT CST Student that is from Japan. Fun fact: Collects vinyl records for 10 years.
-- **Emmanuel ** - BCIT CST Student with a passion for outdoor adventures and user-friendly applications. Fun fact: Love hanging out with friend and family. Love playing video game and working out in my free times.
-- **Havoc** - BCIT CST Student, Frontend enthusiast with a knack for creative design. Fun fact: Has a collection of over 50 houseplants.
-- Zhuming Mai - BCIT CST Student, high enthusiast to cryptograthy and cybersecurity. Fun fact: Has a collection of over 100 Canadian commemorative coin.
-- Tyki Mckinnon- - BCIT CST Student with a passion for hiking as well as making new frineds to talk to. Fun fact: Loves to collect viynl records.
-- Luka - BCIT(wanna be UBC) CST student. Very unique and funny person who seems to enjoy math.Fun fact:He is better at coding than I am and has similar hobbies as me.
+- **Emmanuel** - BCIT CST Student with a passion for outdoor adventures and user-friendly applications. Fun fact: Love hanging out with friend and family. Love playing video game and working out in my free times.
+- **Zhuming Mai** - BCIT CST Student, high enthusiast to cryptograthy and cybersecurity. Fun fact: Has a collection of over 100 Canadian commemorative coin.
+- **Tyki Mckinnon**- - BCIT CST Student with a passion for hiking as well as making new frineds to talk to. Fun fact: Loves to collect viynl records.
 
 ---
 
