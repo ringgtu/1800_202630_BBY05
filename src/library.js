@@ -113,7 +113,7 @@ function buildBook(i) {
     <div class="base"><div class="face front">${b.page}</div></div>
     <div class="leaf">
       <div class="face front cover has-image">
-        <img class="library-cover" src="/images/book.jpg" alt="Cover of ${esc(b.name)}">
+        <img class="library-cover" src="/images/cover_not_available.jpg" alt="Cover of ${esc(b.name)}">
       </div>
       <div class="face back inside">
         <h2>${esc(b.name)}</h2>

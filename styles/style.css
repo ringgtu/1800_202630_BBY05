@@ -3,22 +3,20 @@
    This file must load AFTER Bootstrap, so these rules can override it.
    ========================================================================== */
 
-
 /* 1. Palette
    ========================================================================== */
 :root {
-  --primary: #6D2432;
-  --secondary: #A44A3F;
-  --accent: #D9B382;
-  --bg: #F4ECE0;
-  --text: #2E2A26;
-  --paper: #FFFAF2;        /* a lighter tint of --bg, for cards, book pages and pop-ups */
+  --primary: #6d2432;
+  --secondary: #a44a3f;
+  --accent: #d9b382;
+  --bg: #f4ece0;
+  --text: #2e2a26;
+  --paper: #fffaf2; /* a lighter tint of --bg, for cards, book pages and pop-ups */
 
   /* size of the library book: one page, and its height */
   --pw: min(42vw, 320px);
   --ph: calc(var(--pw) * 1.4);
 }
-
 
 /* 2. Base
    ========================================================================== */
@@ -35,7 +33,7 @@ body {
 }
 
 .bg-body-tertiary {
-  background-color: var(--bg) !important;     /* the login page's <body> */
+  background-color: var(--bg) !important; /* the login page's <body> */
 }
 
 hr {
@@ -47,7 +45,6 @@ hr {
   color: var(--text) !important;
   opacity: 0.75;
 }
-
 
 /* 3. Buttons
    One shared set of colors. Two classes (.btn.btn-x) so Bootstrap's own
@@ -128,7 +125,6 @@ hr {
   --bs-btn-active-color: var(--secondary);
 }
 
-
 /* 4. Forms
    ========================================================================== */
 .form-control {
@@ -169,7 +165,6 @@ hr {
 .bg-secondary-subtle {
   background-color: var(--accent) !important;
 }
-
 
 /* 5. Navigation and footer
    ========================================================================== */
@@ -220,13 +215,11 @@ site-navbar .nav-link:hover {
   border-color: var(--secondary) !important;
 }
 
-
 /* 6. Home page
    ========================================================================== */
 .hero-title {
   color: var(--primary);
 }
-
 
 /* 7. Login page
    Add class="login-page" to the <body> of login.html.
@@ -249,7 +242,6 @@ site-navbar .nav-link:hover {
   color: var(--primary);
 }
 
-
 /* 8. Search, filter and library pages
    ========================================================================== */
 main h1,
@@ -262,7 +254,7 @@ main h2 {
 }
 
 .card h3 a {
-  color: var(--primary) !important;           /* beats Bootstrap's .text-body */
+  color: var(--primary) !important; /* beats Bootstrap's .text-body */
 }
 
 .card h3 a:hover {
@@ -273,7 +265,6 @@ main h2 {
 .btn-link .bi-heart-fill {
   color: var(--secondary);
 }
-
 
 /* 9. Library page: the book
    ========================================================================== */
@@ -287,22 +278,25 @@ main h2 {
   min-height: 100vh;
   min-height: 100dvh;
   flex-direction: column;
-  --pw: min(48vw, 42vh, 480px);
+  /* Maximize cover size while leaving room for header, actions, and navbar */
+  --pw: min(46vw, 39vh, 420px);
   --ph: calc(var(--pw) * 1.4);
 }
 
 .library-page .stage {
   display: flex;
-  flex: 1 0 auto;
+  flex: 1 1 auto;
   align-items: center;
   justify-content: center;
   min-height: 0;
-  padding: 0.75rem 0;
+  padding: 0.25rem 0;
 }
 
 /* sliding from one book to the next */
 .shelf {
-  transition: opacity 0.35s ease, transform 0.35s ease;
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s ease;
 }
 
 .shelf.out-left {
@@ -320,7 +314,7 @@ main h2 {
   width: calc(var(--pw) * 2);
   height: var(--ph);
   margin: 0 auto;
-  transform: translateX(-25%);                /* closed: the cover sits in the middle */
+  transform: translateX(-25%); /* closed: the cover sits in the middle */
   transition: transform 0.8s ease;
   touch-action: pan-y;
   user-select: none;
@@ -344,7 +338,7 @@ main h2 {
 
 .leaf {
   z-index: 2;
-  transform-origin: left center;              /* the hinge is the spine */
+  transform-origin: left center; /* the hinge is the spine */
   transform-style: preserve-3d;
   transition: transform 0.8s ease;
 }
@@ -483,8 +477,13 @@ main h2 {
 }
 
 @keyframes nudge {
-  0%, 100% { transform: translateX(0); }
-  50%      { transform: translateX(4px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(4px);
+  }
 }
 
 .controls {
@@ -492,17 +491,16 @@ main h2 {
 }
 
 .library-actions {
-  position: fixed;
-  z-index: 1020;
-  bottom: calc(8rem + env(safe-area-inset-bottom));
-  left: 50%;
+  position: relative;
+  z-index: 10;
   display: flex;
-  width: min(34rem, calc(100% - 1rem));
+  width: min(34rem, calc(100% - 1.5rem));
+  margin: 0.35rem auto 0.75rem;
+  flex-shrink: 0;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.65rem;
   box-sizing: border-box;
-  padding: 1rem;
-  transform: translateX(-50%);
+  padding: 0.75rem 1rem;
   border: 1px solid var(--accent);
   border-radius: 0.75rem;
   background-color: var(--paper);
@@ -513,7 +511,7 @@ main h2 {
   width: 100%;
   max-width: none;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .library-actions .btn {
@@ -537,14 +535,14 @@ main h2 {
 
 .library-page site-navbar > div[aria-hidden="true"] {
   box-sizing: border-box;
-  height: calc(17rem + env(safe-area-inset-bottom));
+  height: calc(6.5rem + env(safe-area-inset-bottom));
   margin: 0 !important;
   padding: 0 !important;
 }
 
 @media (max-width: 575.98px) {
   .library-page {
-    --pw: min(63vw, 34vh, 480px);
+    --pw: min(74vw, 35vh, 340px);
     --ph: calc(var(--pw) * 1.4);
   }
 
@@ -618,6 +616,43 @@ main h2 {
   }
 }
 
+/* Height-based adjustments: prevent library-actions from colliding with book when viewport height is small */
+@media (max-height: 750px) {
+  .library-page {
+    --pw: min(44vw, 32vh, 340px);
+    --ph: calc(var(--pw) * 1.4);
+  }
+
+  .library-actions {
+    margin: 0.25rem auto 0.65rem;
+    padding: 0.65rem 0.85rem;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-height: 600px) {
+  .library-page {
+    --pw: min(40vw, 26vh, 270px);
+    --ph: calc(var(--pw) * 1.4);
+  }
+
+  .library-page .library-header {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.25rem !important;
+  }
+
+  .library-actions {
+    margin: 0.25rem auto 0.5rem;
+    padding: 0.45rem 0.75rem;
+    gap: 0.4rem;
+  }
+
+  .library-actions .btn {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.8rem;
+  }
+}
+
 /* the Add book button stays in the top right corner, even when the page scrolls */
 .add-fixed {
   position: fixed;
@@ -626,7 +661,6 @@ main h2 {
   z-index: 1030;
   box-shadow: 0 2px 8px rgba(46, 42, 38, 0.3);
 }
-
 
 /* 10. Library & Add a book pages: modal and search results list
    ========================================================================== */
@@ -686,7 +720,6 @@ div.modal {
   object-fit: contain;
 }
 
-
 /* 11. Profile page
    Add class="profile-page" to the <body> of profile.html.
    Bootstrap builds .bg-secondary, .text-secondary, .bg-light and .bg-dark-subtle
@@ -694,17 +727,16 @@ div.modal {
    touching the HTML. The grey boxes become the palette's burgundy.
    ========================================================================== */
 .profile-page {
-  --bs-secondary-rgb: 109, 36, 50;       /* = --primary */
-  --bs-light-rgb: 244, 236, 224;         /* = --bg */
+  --bs-secondary-rgb: 109, 36, 50; /* = --primary */
+  --bs-light-rgb: 244, 236, 224; /* = --bg */
   --bs-dark-bg-subtle: var(--secondary);
 }
-
 
 /* 12. Reviews page
    Add class="reviews-page" to the <body> of reviews.html.
    ========================================================================== */
 .reviews-page {
-  --bs-secondary-rgb: 164, 74, 63;       /* = --secondary: the .text-secondary status message */
+  --bs-secondary-rgb: 164, 74, 63; /* = --secondary: the .text-secondary status message */
 }
 
 /* back arrow (use class="back-link" on any back link) */
