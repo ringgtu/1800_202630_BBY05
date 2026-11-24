@@ -858,3 +858,119 @@ div.modal {
   outline: 2px solid var(--primary);
   outline-offset: 3px;
 }
+
+
+/* =========================================
+   13. My Lists page
+   ========================================= */
+
+body:has(#lists) {
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+#listsMessage {
+  color: var(--text) !important;
+}
+
+
+#lists .bg-secondary {
+  background-color: var(--paper) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--accent);
+  box-shadow: 0 3px 10px rgba(46, 42, 38, 0.12);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#lists .bg-secondary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 14px rgba(46, 42, 38, 0.2);
+}
+
+/* List names */
+#lists .list-name {
+  color: var(--primary) !important;
+  font-weight: 600;
+}
+
+#lists .list-name:hover {
+  color: var(--secondary) !important;
+}
+
+/* Updated date and book count */
+#lists .list-updated,
+#lists .list-count {
+  color: var(--text) !important;
+  opacity: 0.75;
+}
+
+/* New list button */
+#newListButton {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: var(--bg);
+}
+
+#newListButton:hover {
+  background-color: var(--secondary);
+  border-color: var(--secondary);
+}
+
+/* Create button */
+#createList {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: var(--bg);
+}
+
+#createList:hover {
+  background-color: var(--secondary);
+  border-color: var(--secondary);
+}
+
+/* Delete button */
+#lists .list-delete {
+  color: var(--secondary);
+  border-color: var(--secondary);
+  background-color: transparent;
+}
+
+#lists .list-delete:hover {
+  background-color: var(--secondary);
+  border-color: var(--secondary);
+  color: var(--bg);
+}
+
+/* New list input */
+#newListName {
+  background-color: var(--paper);
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+#newListName:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 0.25rem rgba(109, 36, 50, 0.2);
+}
+
+#newListName::placeholder {
+  color: var(--text);
+  opacity: 0.6;
+}
+
+/* Book cover preview area */
+#lists .list-covers {
+  background-color: var(--bg);
+  border: 1px solid var(--accent);
+}
+
+/* Back button */
+.back-link {
+  color: var(--primary);
+}
+
+.back-link:hover {
+  color: var(--secondary);
+}
+
+
