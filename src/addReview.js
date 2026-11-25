@@ -9,8 +9,7 @@ import {
   setDoc,
 } from "firebase/firestore";
 import { initializeBackLink } from "./backLink.js";
-
-const API_KEY = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY;
+import { searchBooks, getBookById } from "./master.js";
 
 const form = document.getElementById("reviewForm");
 const fields = document.getElementById("reviewFields");
@@ -28,6 +27,7 @@ let ready = false;
 let selected = null; // { id, title, authors, thumbnail }
 let searchTimer = null;
 let searchToken = 0; // ignores old search results that arrive late
+const searchCache = new Map(); // same search typed twice = no second API call
 
 function showMessage(text, colour = "secondary") {
   message.textContent = text;
@@ -106,26 +106,27 @@ function selectBook(book) {
 
 // ---------- Search the Google Books API while typing ----------
 
-async function searchBooks(term) {
+async function runSearch(term) {
   const token = ++searchToken;
 
-  if (term.length < 2) {
+  if (term.length < 3) {
     bookResults.replaceChildren();
     bookResults.hidden = true;
     return;
   }
 
   try {
-    const res = await fetch(
-      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(term)}&maxResults=10&printType=books&key=${API_KEY}`
-    );
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    // Uses the team's searchBooks in master.js
+    const key = term.toLowerCase();
+    let items = searchCache.get(key);
+    if (!items) {
+      items = (await searchBooks({ q: term })).slice(0, 10);
+      searchCache.set(key, items);
+    }
 
     if (token !== searchToken) return; // the user kept typing, a newer search is coming
 
     bookResults.replaceChildren();
-    const items = data.items ?? [];
 
     if (!items.length) {
       const empty = document.createElement("div");
@@ -180,7 +181,8 @@ async function searchBooks(term) {
 
 bookSearch.addEventListener("input", () => {
   clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => searchBooks(bookSearch.value.trim()), 300);
+  // Wait until the user stops typing for half a second, so we don't call the API on every key
+  searchTimer = setTimeout(() => runSearch(bookSearch.value.trim()), 500);
 });
 
 // Pressing Enter in the search box should not submit the review.
@@ -236,20 +238,16 @@ onAuthReady(async (user) => {
   if (paramBookId) {
     let book = { id: paramBookId, title: paramTitle || "Selected Book", authors: "", thumbnail: "" };
     try {
-      const res = await fetch(
-        `https://www.googleapis.com/books/v1/volumes/${encodeURIComponent(paramBookId)}?key=${API_KEY}`
-      );
-      if (res.ok) {
-        const v = (await res.json()).volumeInfo || {};
-        book = {
-          id: paramBookId,
-          title: v.title || book.title,
-          authors: v.authors?.join(", ") || "",
-          thumbnail: getThumbnail(v.imageLinks),
-        };
-      }
+      // getBookById uses the team's 24-hour cache, so this is usually free
+      const v = (await getBookById(paramBookId)).volumeInfo || {};
+      book = {
+        id: paramBookId,
+        title: v.title || book.title,
+        authors: v.authors?.join(", ") || "",
+        thumbnail: getThumbnail(v.imageLinks),
+      };
     } catch (e) {
-      console.warn("Could not fetch book from Google Books:", e);
+      console.warn("Could not load book:", e);
     }
     selectBook(book);
   }
@@ -315,7 +313,8 @@ form.addEventListener("submit", async (event) => {
     if (paramBookId) {
       window.location.href = `./book_info.html?bookid=${encodeURIComponent(bookId)}`;
     } else {
-      window.location.href = "./reviews.html";
+      // Open the review that was just saved, so the user sees it straight away
+      window.location.href = `./review_detail.html?book=${encodeURIComponent(bookId)}&id=${encodeURIComponent(reviewRef.id)}`;
     }
   } catch (error) {
     console.error("Could not save review:", error);
