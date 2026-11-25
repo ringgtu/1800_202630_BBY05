@@ -5,9 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>My Lists</title>
 
+  
+
     <script type="module" src="/src/main.js"></script>
     <script type="module" src="/src/backLink.js"></script>
     <script type="module" src="/src/lists.js"></script>
+        <link rel="stylesheet" href="/styles/style.css" />
   </head>
 
   <body>
@@ -48,10 +51,14 @@
               <a href="#" class="list-name text-white text-decoration-none stretched-link"></a>
             </h2>
             <p class="list-updated small mb-1"></p>
-            <p class="list-count small mb-0"></p>
+            <p class="list-count small mb-2"></p>
+
+            <button type="button" class="list-delete btn btn-sm btn-outline-light position-relative z-2" aria-label="Delete list">
+              <i class="bi bi-trash" aria-hidden="true"></i> Delete
+            </button>
           </div>
 
-          <!--  4 cells of book cover -->
+          <!-- 4 cells of book cover -->
           <div class="list-covers d-grid flex-shrink-0 overflow-hidden rounded-2" style="grid-template-columns: 1fr 1fr; width: 88px; height: 112px"></div>
         </div>
       </template>

@@ -161,7 +161,6 @@ function renderRetailers(bookData, v) {
   });
 }
 
-let currentBookData = null;
 let modalRating = 0;
 let modalSaving = false;
 
@@ -196,18 +195,14 @@ function initEvents() {
   });
 }
 
-async function loadReviewsAndRatings(bookid, bookData) {
-  const v = bookData?.volumeInfo || {};
+async function loadReviewsAndRatings(bookid) {
   const starIconsEl = document.getElementById("starIcons");
   const ratingScoreEl = document.getElementById("ratingScore");
   const ratingsCountEl = document.getElementById("ratingsCount");
   const reviewsCountEl = document.getElementById("reviewsCount");
   const reviewsListEl = document.getElementById("bookReviewsList");
 
-  const googleRating = typeof v.averageRating === "number" ? v.averageRating : null;
-  const googleRatingsCount = typeof v.ratingsCount === "number" ? v.ratingsCount : 0;
-
-  let firestoreReviews = [];
+  let firestoreReviews;
   try {
     const snap = await getDocs(collection(db, "books", bookid, "review"));
     firestoreReviews = snap.docs.map((d) => ({
@@ -220,32 +215,29 @@ async function loadReviewsAndRatings(bookid, bookData) {
     );
   } catch (error) {
     console.error("Could not load Firestore reviews:", error);
+    if (starIconsEl) {
+      starIconsEl.replaceChildren(renderRatingStarsWithHalves(null));
+    }
+    if (ratingScoreEl) ratingScoreEl.textContent = "Unavailable";
+    if (ratingsCountEl) ratingsCountEl.textContent = "Unavailable";
+    if (reviewsCountEl) reviewsCountEl.textContent = "Unavailable";
+    if (reviewsListEl) {
+      const errorNotice = document.createElement("p");
+      errorNotice.className = "text-danger mb-0";
+      errorNotice.textContent = "Could not load reviews. Please try again.";
+      reviewsListEl.replaceChildren(errorNotice);
+    }
+    return;
   }
 
   const firestoreCount = firestoreReviews.length;
-  const totalRatingsCount = googleRatingsCount + firestoreCount;
-
-  let avgRating = null;
-  if (googleRating !== null && googleRatingsCount > 0) {
-    if (firestoreCount > 0) {
-      const firestoreTotal = firestoreReviews.reduce(
-        (sum, r) => sum + (Number(r.rating) || 0),
-        0
-      );
-      avgRating =
-        (googleRating * googleRatingsCount + firestoreTotal) / totalRatingsCount;
-    } else {
-      avgRating = googleRating;
-    }
-  } else if (googleRating !== null) {
-    avgRating = googleRating;
-  } else if (firestoreCount > 0) {
-    const firestoreTotal = firestoreReviews.reduce(
-      (sum, r) => sum + (Number(r.rating) || 0),
-      0
-    );
-    avgRating = firestoreTotal / firestoreCount;
-  }
+  const ratings = firestoreReviews
+    .map((review) => Number(review.rating))
+    .filter((rating) => Number.isFinite(rating) && rating > 0);
+  const avgRating =
+    ratings.length > 0
+      ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length
+      : null;
 
   // Update second line
   if (starIconsEl) {
@@ -256,8 +248,8 @@ async function loadReviewsAndRatings(bookid, bookData) {
   }
   if (ratingsCountEl) {
     ratingsCountEl.textContent =
-      totalRatingsCount > 0
-        ? `${totalRatingsCount.toLocaleString()} ${totalRatingsCount === 1 ? "rating" : "ratings"}`
+      ratings.length > 0
+        ? `${ratings.length.toLocaleString()} ${ratings.length === 1 ? "rating" : "ratings"}`
         : "0 ratings";
   }
   if (reviewsCountEl) {
@@ -441,7 +433,7 @@ function initReviewModal(bookid, bookData) {
       messageEl.textContent = "";
 
       // Refresh reviews & second line
-      await loadReviewsAndRatings(bookid, bookData);
+      await loadReviewsAndRatings(bookid);
     } catch (err) {
       console.error("Error saving review:", err);
       messageEl.textContent = "Could not save your review. Please try again.";
@@ -466,7 +458,6 @@ async function loadBook() {
 
   try {
     const bookData = await getBookData(bookid);
-    currentBookData = bookData;
     const v = bookData.volumeInfo || {};
 
     const titleEl = document.getElementById("title");
@@ -489,12 +480,12 @@ async function loadBook() {
     }
 
     renderRetailers(bookData, v);
-    await loadReviewsAndRatings(bookid, bookData);
+    await loadReviewsAndRatings(bookid);
     initReviewModal(bookid, bookData);
 
     // Re-render when auth changes so Edit buttons appear/disappear
     onAuthReady(() => {
-      loadReviewsAndRatings(bookid, currentBookData);
+      loadReviewsAndRatings(bookid);
     });
   } catch (error) {
     console.error("Error loading book data:", error);
