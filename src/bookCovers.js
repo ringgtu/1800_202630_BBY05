@@ -1,4 +1,5 @@
-const COVER_FALLBACK = "/images/cover_not_available.jpg";
+import coverFallback from "../../images/cover_not_available.jpg";
+const COVER_FALLBACK = coverFallback;
 const COVER_SIZE_ORDER = ["extraLarge", "large", "medium", "small", "thumbnail", "smallThumbnail"];
 
 // Books should have a portrait cover (height >= width, or at least height / width >= 0.75).
