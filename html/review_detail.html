@@ -10,7 +10,7 @@
     <script type="module" src="/src/reviewDetail.js"></script>
   </head>
 
-  <body>
+  <body class="reviews-page">
     <main class="container py-4">
       <a href="./reviews.html" data-back-link class="back-link d-inline-block mb-3" aria-label="Back to reviews">
         <i class="bi bi-chevron-left fs-2" aria-hidden="true"></i>
@@ -70,5 +70,8 @@
     </main>
 
     <site-navbar></site-navbar>
+
+    <!-- The shared palette. It is the LAST thing on the page, so it always wins over Bootstrap. -->
+    <link rel="stylesheet" href="/styles/style.css" />
   </body>
 </html>
