@@ -1,4 +1,4 @@
-import coverFallback from "../../images/cover_not_available.jpg";
+import coverFallback from "../images/cover_not_available.jpg";
 const COVER_FALLBACK = coverFallback;
 const COVER_SIZE_ORDER = ["extraLarge", "large", "medium", "small", "thumbnail", "smallThumbnail"];
 
