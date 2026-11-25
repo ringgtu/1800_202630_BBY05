@@ -257,6 +257,23 @@ onAuthReady(async (user) => {
   showMessage("");
 });
 
+// ---------- Leave the page after saving ----------
+// backLink.js keeps a "pageTrail" of visited pages for the back arrow.
+// Remove Add Review from it, so Back from the new review goes to the page before (e.g. My Reviews).
+function leaveAddReview(url) {
+  try {
+    const here = window.location.pathname + window.location.search;
+    const trail = JSON.parse(sessionStorage.getItem("pageTrail")) ?? [];
+    if (trail[trail.length - 1] === here) {
+      trail.pop();
+      sessionStorage.setItem("pageTrail", JSON.stringify(trail));
+    }
+  } catch {
+    // Storage blocked: just go to the page
+  }
+  window.location.replace(url);
+}
+
 // ---------- Save ----------
 
 form.addEventListener("submit", async (event) => {
@@ -311,10 +328,12 @@ form.addEventListener("submit", async (event) => {
     const urlParams = new URLSearchParams(window.location.search);
     const paramBookId = urlParams.get("bookid") || urlParams.get("book");
     if (paramBookId) {
-      window.location.href = `./book_info.html?bookid=${encodeURIComponent(bookId)}`;
+      leaveAddReview(`./book_info.html?bookid=${encodeURIComponent(bookId)}`);
     } else {
       // Open the review that was just saved, so the user sees it straight away
-      window.location.href = `./review_detail.html?book=${encodeURIComponent(bookId)}&id=${encodeURIComponent(reviewRef.id)}`;
+      leaveAddReview(
+        `./review_detail.html?book=${encodeURIComponent(bookId)}&id=${encodeURIComponent(reviewRef.id)}`
+      );
     }
   } catch (error) {
     console.error("Could not save review:", error);
