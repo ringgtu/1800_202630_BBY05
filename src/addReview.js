@@ -5,15 +5,17 @@ import {
   arrayUnion,
   collection,
   doc,
-  getDocs,
   serverTimestamp,
   setDoc,
 } from "firebase/firestore";
 import { initializeBackLink } from "./backLink.js";
+import { searchBooks, getBookById } from "./master.js";
 
 const form = document.getElementById("reviewForm");
 const fields = document.getElementById("reviewFields");
-const bookSelect = document.getElementById("bookSelect");
+const bookSearch = document.getElementById("bookSearch");
+const bookResults = document.getElementById("bookResults");
+const selectedBook = document.getElementById("selectedBook");
 const starInput = document.getElementById("starInput");
 const commentInput = document.getElementById("commentInput");
 const saveButton = document.getElementById("saveReview");
@@ -22,14 +24,174 @@ const message = document.getElementById("addMessage");
 let rating = 0;
 let saving = false;
 let ready = false;
-const bookNames = {}; // book document id -> title
+let selected = null; // { id, title, authors, thumbnail }
+let searchTimer = null;
+let searchToken = 0; // ignores old search results that arrive late
+const searchCache = new Map(); // same search typed twice = no second API call
 
 function showMessage(text, colour = "secondary") {
   message.textContent = text;
   message.className = `mt-3 mb-0 text-${colour}`;
 }
 
-// Five clickable stars.
+function getThumbnail(imageLinks) {
+  const url = imageLinks?.smallThumbnail || imageLinks?.thumbnail || "";
+  return url.replace(/^http:/, "https:");
+}
+
+function makeCover(src, title) {
+  const img = document.createElement("img");
+  img.src = src || "/images/book.jpg";
+  img.alt = title ? `Cover of ${title}` : "Book cover";
+  img.width = 40;
+  img.height = 60;
+  img.style.objectFit = "cover";
+  img.className = "rounded flex-shrink-0";
+  return img;
+}
+
+// ---------- Selected book ----------
+
+function renderSelected() {
+  selectedBook.replaceChildren();
+
+  if (!selected) {
+    selectedBook.hidden = true;
+    bookSearch.hidden = false;
+    return;
+  }
+
+  const row = document.createElement("div");
+  row.className = "d-flex align-items-center gap-3 p-2 border rounded-3";
+
+  const info = document.createElement("div");
+  info.className = "flex-grow-1";
+  info.style.minWidth = "0";
+
+  const title = document.createElement("div");
+  title.className = "fw-semibold text-break";
+  title.textContent = selected.title;
+  info.append(title);
+
+  if (selected.authors) {
+    const author = document.createElement("div");
+    author.className = "small text-secondary";
+    author.textContent = selected.authors;
+    info.append(author);
+  }
+
+  const change = document.createElement("button");
+  change.type = "button";
+  change.className = "btn btn-outline-secondary btn-sm";
+  change.textContent = "Change";
+  change.addEventListener("click", () => {
+    selected = null;
+    renderSelected();
+    bookSearch.value = "";
+    bookSearch.focus();
+  });
+
+  row.append(makeCover(selected.thumbnail, selected.title), info, change);
+  selectedBook.append(row);
+  selectedBook.hidden = false;
+  bookSearch.hidden = true;
+  bookResults.hidden = true;
+}
+
+function selectBook(book) {
+  selected = book;
+  bookResults.replaceChildren();
+  renderSelected();
+}
+
+// ---------- Search the Google Books API while typing ----------
+
+async function runSearch(term) {
+  const token = ++searchToken;
+
+  if (term.length < 3) {
+    bookResults.replaceChildren();
+    bookResults.hidden = true;
+    return;
+  }
+
+  try {
+    // Uses the team's searchBooks in master.js
+    const key = term.toLowerCase();
+    let items = searchCache.get(key);
+    if (!items) {
+      items = (await searchBooks({ q: term })).slice(0, 10);
+      searchCache.set(key, items);
+    }
+
+    if (token !== searchToken) return; // the user kept typing, a newer search is coming
+
+    bookResults.replaceChildren();
+
+    if (!items.length) {
+      const empty = document.createElement("div");
+      empty.className = "list-group-item text-secondary";
+      empty.textContent = "No books found.";
+      bookResults.append(empty);
+    }
+
+    items.forEach((item) => {
+      const v = item.volumeInfo || {};
+      const book = {
+        id: item.id,
+        title: v.title || "Untitled",
+        authors: v.authors?.join(", ") || "",
+        thumbnail: getThumbnail(v.imageLinks),
+      };
+
+      const option = document.createElement("button");
+      option.type = "button";
+      option.className = "list-group-item list-group-item-action d-flex align-items-center gap-3";
+
+      const text = document.createElement("div");
+      text.style.minWidth = "0";
+      const t = document.createElement("div");
+      t.className = "fw-semibold text-break";
+      t.textContent = book.title;
+      text.append(t);
+      if (book.authors) {
+        const a = document.createElement("div");
+        a.className = "small text-secondary";
+        a.textContent = book.authors;
+        text.append(a);
+      }
+
+      option.append(makeCover(book.thumbnail, book.title), text);
+      option.addEventListener("click", () => selectBook(book));
+      bookResults.append(option);
+    });
+
+    bookResults.hidden = false;
+  } catch (error) {
+    if (token !== searchToken) return;
+    console.error("Book search failed:", error);
+    bookResults.replaceChildren();
+    const err = document.createElement("div");
+    err.className = "list-group-item text-danger";
+    err.textContent = "Could not search books. Try again.";
+    bookResults.append(err);
+    bookResults.hidden = false;
+  }
+}
+
+bookSearch.addEventListener("input", () => {
+  clearTimeout(searchTimer);
+  // Wait until the user stops typing for half a second, so we don't call the API on every key
+  searchTimer = setTimeout(() => runSearch(bookSearch.value.trim()), 500);
+});
+
+// Pressing Enter in the search box should not submit the review.
+bookSearch.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") event.preventDefault();
+});
+
+// ---------- Stars ----------
+
 const starIcons = [];
 for (let i = 1; i <= 5; i++) {
   const button = document.createElement("button");
@@ -50,7 +212,8 @@ for (let i = 1; i <= 5; i++) {
   starInput.append(button);
 }
 
-// Only signed-in users can write a review.
+// ---------- Page setup: only signed-in users can write a review ----------
+
 onAuthReady(async (user) => {
   ready = false;
   fields.disabled = true;
@@ -71,64 +234,47 @@ onAuthReady(async (user) => {
   }
   initializeBackLink(backLink);
 
-  try {
-    const snapshot = await getDocs(collection(db, "books"));
-    const books = snapshot.docs
-      .map((d) => ({ id: d.id, name: d.data().name ?? d.id }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-
-    books.forEach((book) => {
-      bookNames[book.id] = book.name;
-    });
-
-    if (paramBookId && !bookNames[paramBookId]) {
-      let title = paramTitle;
-      if (!title) {
-        try {
-          const res = await fetch(
-            `https://www.googleapis.com/books/v1/volumes/${paramBookId}?key=${import.meta.env.VITE_GOOGLE_BOOKS_API_KEY}`
-          );
-          if (res.ok) {
-            const data = await res.json();
-            title = data.volumeInfo?.title;
-          }
-        } catch (e) {
-          console.warn("Could not fetch title from Google Books:", e);
-        }
-      }
-      bookNames[paramBookId] = title || "Selected Book";
+  // Coming from a book page: pre-select that book.
+  if (paramBookId) {
+    let book = { id: paramBookId, title: paramTitle || "Selected Book", authors: "", thumbnail: "" };
+    try {
+      // getBookById uses the team's 24-hour cache, so this is usually free
+      const v = (await getBookById(paramBookId)).volumeInfo || {};
+      book = {
+        id: paramBookId,
+        title: v.title || book.title,
+        authors: v.authors?.join(", ") || "",
+        thumbnail: getThumbnail(v.imageLinks),
+      };
+    } catch (e) {
+      console.warn("Could not load book:", e);
     }
-
-    bookSelect.replaceChildren();
-    const defaultOption = document.createElement("option");
-    defaultOption.value = "";
-    defaultOption.textContent = "Choose a book…";
-    bookSelect.append(defaultOption);
-
-    Object.keys(bookNames)
-      .sort((a, b) => bookNames[a].localeCompare(bookNames[b]))
-      .forEach((id) => {
-        const option = document.createElement("option");
-        option.value = id;
-        option.textContent = bookNames[id];
-        if (paramBookId && id === paramBookId) {
-          option.selected = true;
-        }
-        bookSelect.append(option);
-      });
-
-    if (paramBookId) {
-      bookSelect.value = paramBookId;
-    }
-
-    ready = true;
-    fields.disabled = false;
-    showMessage(Object.keys(bookNames).length ? "" : "No books found to review yet.");
-  } catch (error) {
-    console.error("Could not load books:", error);
-    showMessage("Could not load the books. Refresh the page to try again.", "danger");
+    selectBook(book);
   }
+
+  ready = true;
+  fields.disabled = false;
+  showMessage("");
 });
+
+// ---------- Leave the page after saving ----------
+// backLink.js keeps a "pageTrail" of visited pages for the back arrow.
+// Remove Add Review from it, so Back from the new review goes to the page before (e.g. My Reviews).
+function leaveAddReview(url) {
+  try {
+    const here = window.location.pathname + window.location.search;
+    const trail = JSON.parse(sessionStorage.getItem("pageTrail")) ?? [];
+    if (trail[trail.length - 1] === here) {
+      trail.pop();
+      sessionStorage.setItem("pageTrail", JSON.stringify(trail));
+    }
+  } catch {
+    // Storage blocked: just go to the page
+  }
+  window.location.replace(url);
+}
+
+// ---------- Save ----------
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -136,12 +282,14 @@ form.addEventListener("submit", async (event) => {
   const user = auth.currentUser;
   if (!user || !ready || saving) return;
 
-  const bookId = bookSelect.value;
   const comment = commentInput.value.trim();
 
-  if (!bookId) return showMessage("Please choose a book.", "danger");
+  if (!selected) return showMessage("Please search for and choose a book.", "danger");
   if (!rating) return showMessage("Please choose a star rating.", "danger");
   if (!comment) return showMessage("Please write a comment.", "danger");
+
+  const bookId = selected.id;
+  const bookName = selected.title;
 
   saving = true;
   fields.disabled = true;
@@ -151,7 +299,7 @@ form.addEventListener("submit", async (event) => {
   try {
     // 1. The review is saved under the book: books/{bookId}/review/{reviewId}
     const reviewRef = await addDoc(collection(db, "books", bookId, "review"), {
-      bookName: bookNames[bookId] || "",
+      bookName,
       userId: user.uid,
       userName: user.displayName || "Reader",
       rating,
@@ -170,9 +318,9 @@ form.addEventListener("submit", async (event) => {
       console.error("Review saved, but could not update myreview:", error);
     }
 
-    // 3. Ensure books/{bookId} has the title for future reviews
+    // 3. Ensure books/{bookId} has the title
     try {
-      await setDoc(doc(db, "books", bookId), { name: bookNames[bookId] || "Book" }, { merge: true });
+      await setDoc(doc(db, "books", bookId), { name: bookName }, { merge: true });
     } catch (error) {
       console.error("Could not update books document:", error);
     }
@@ -180,9 +328,12 @@ form.addEventListener("submit", async (event) => {
     const urlParams = new URLSearchParams(window.location.search);
     const paramBookId = urlParams.get("bookid") || urlParams.get("book");
     if (paramBookId) {
-      window.location.href = `./book_info.html?bookid=${encodeURIComponent(bookId)}`;
+      leaveAddReview(`./book_info.html?bookid=${encodeURIComponent(bookId)}`);
     } else {
-      window.location.href = "./reviews.html";
+      // Open the review that was just saved, so the user sees it straight away
+      leaveAddReview(
+        `./review_detail.html?book=${encodeURIComponent(bookId)}&id=${encodeURIComponent(reviewRef.id)}`
+      );
     }
   } catch (error) {
     console.error("Could not save review:", error);

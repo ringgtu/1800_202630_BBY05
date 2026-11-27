@@ -1,7 +1,7 @@
 import { db } from "./firebaseConfig.js";
 import { onAuthReady } from "./authentication.js";
 import { collection, collectionGroup, doc, getDoc, getDocs } from "firebase/firestore";
-import { createCover, renderStars, formatDate } from "./reviewUtils.js";
+import { createCover } from "./reviewUtils.js";
 import { initializeBackLink } from "./backLink.js";
 import { getBookById } from "./master.js";
 import { setBookCover } from "./bookCovers.js";
@@ -66,36 +66,19 @@ function loadReviewCover(cover, review) {
   });
 }
 
-// One review row: cover, book, stars, name and a shortened comment.
+// One review row: only the cover and book title.
+// Clicking it opens review_detail.html, which shows the stars, name, date and comment.
 function buildItem(review) {
   const link = document.createElement("a");
   link.href = `./review_detail.html?book=${encodeURIComponent(review.bookId)}&id=${encodeURIComponent(review.id)}`;
-  link.className = "d-flex gap-3 text-decoration-none text-dark";
-
-  const body = document.createElement("div");
-  body.className = "flex-grow-1";
-  body.style.minWidth = "0";
+  link.className = "d-flex align-items-center gap-3 text-decoration-none text-dark";
 
   const title = document.createElement("div");
   title.className = "fw-semibold text-break";
   title.textContent = review.bookName || "Book";
 
-  const meta = document.createElement("div");
-  meta.className = "small text-secondary mb-1";
-  meta.append(renderStars(review.rating || 0));
-  meta.append(
-    ` ${review.userName || "Reader"}${review.createdAt ? " · " + formatDate(review.createdAt) : ""}`
-  );
-
-  const text = document.createElement("p");
-  text.className = "mb-0 text-break";
-  text.style.cssText =
-    "display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;";
-  text.textContent = review.comment || "";
-
-  body.append(title, meta, text);
   const cover = createCover(review.bookName);
-  link.append(cover, body);
+  link.append(cover, title);
   loadReviewCover(cover, review);
   return link;
 }
